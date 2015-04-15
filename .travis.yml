@@ -15,5 +15,7 @@ notifications:
     on_failure: always
     use_notice: true
 
+install:
+  - sudo apt-get install python3
 script:
   - make CC=$CC
