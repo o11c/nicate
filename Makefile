@@ -25,8 +25,6 @@ WARNINGS = -Werror -Wall -Wextra -Wformat -Wunused -Wc++-compat -Wmissing-declar
 
 LIB_OBJECTS = builder.o bridge.o c89.gen.o pool.o hashmap.o PMurHash.o
 
-.DEFAULT_GOAL = hello.gen.run
-
 ############################################################
 #        No user servicable parts beyond this point.       #
 ############################################################
@@ -41,10 +39,13 @@ export LD_LIBRARY_PATH:=.:${LD_LIBRARY_PATH}
 .SECONDARY:
 .DELETE_ON_ERROR:
 
+default: hello.gen.run hello2.gen.run
+
 hello.x: hello.o libnicate.so
 libnicate.so: ${LIB_OBJECTS}
 # force order
 bridge.o builder.o: c89.gen.h
+hello2.gen.c: libnicate.so
 
 lib%.so: %.o
 	${CC} -shared ${LDFLAGS} $^ ${LDLIBS} -o $@
@@ -60,7 +61,7 @@ lib%.so: %.o
 	./$<
 
 clean:
-	rm -f *.x *.o *.d
+	rm -f *.x *.o *.d *.so
 distclean: clean
 	rm -f *.gen.*
 
