@@ -18,7 +18,7 @@ notifications:
 install:
   - sudo apt-get install python3
   - wget https://bootstrap.pypa.io/get-pip.py
-  - python3 get-pip.py
+  - python3 get-pip.py --user
   - pip3 install --user cffi
 script:
   - make CC=$CC
