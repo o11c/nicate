@@ -16,6 +16,7 @@ notifications:
     use_notice: true
 
 install:
+  - export PATH=$HOME/.local/bin:$PATH
   - sudo apt-get install python3
   - wget https://bootstrap.pypa.io/get-pip.py
   - python3 get-pip.py --user
