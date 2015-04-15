@@ -23,7 +23,7 @@ LDLIBS =
 
 WARNINGS = -Werror -Wall -Wextra -Wformat -Wunused -Wc++-compat -Wmissing-declarations -Wredundant-decls
 
-OBJECTS = hello.o builder.o bridge.o c89.gen.o pool.o hashmap.o PMurHash.o
+LIB_OBJECTS = builder.o bridge.o c89.gen.o pool.o hashmap.o PMurHash.o
 
 .DEFAULT_GOAL = hello.gen.run
 
@@ -33,15 +33,21 @@ OBJECTS = hello.o builder.o bridge.o c89.gen.o pool.o hashmap.o PMurHash.o
 
 override CFLAGS += -std=c89 -D_POSIX_C_SOURCE=200809L
 override CFLAGS += -MMD -MP
+override CFLAGS += -fPIC
+
+export LD_LIBRARY_PATH:=.:${LD_LIBRARY_PATH}
 
 .SUFFIXES:
 .SECONDARY:
 .DELETE_ON_ERROR:
 
-hello.x: ${OBJECTS}
+hello.x: hello.o libnicate.so
+libnicate.so: ${LIB_OBJECTS}
 # force order
 bridge.o builder.o: c89.gen.h
 
+lib%.so: %.o
+	${CC} -shared ${LDFLAGS} $^ ${LDLIBS} -o $@
 %.x: %.o
 	${CC} ${LDFLAGS} $^ ${LDLIBS} -o $@
 %.o: %.c

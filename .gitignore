@@ -1,4 +1,5 @@
 # trivial file, no copyright
+*.so
 *.o
 *.x
 *.d
