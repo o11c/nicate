@@ -787,7 +787,7 @@ BuildExpression *build_expr_string(Builder *b, const char *s)
 }
 BuildExpression *build_expr_string_slice(Builder *b, const char *s, size_t l)
 {
-    const char *q = pool_single_quote(b->pool, s, l);
+    const char *q = pool_double_quote(b->pool, s, l);
     C89_TokStringLiteral *p = c89_create_tok_string_literal(b->pool, q);
     return build_expr_from_primary(b, (C89_AnyPrimaryExpression *)p);
 }

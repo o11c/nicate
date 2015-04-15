@@ -73,6 +73,7 @@ HashEntry *map_entry(HashMap *map, HashKey key)
                 return &bucket->entry;
             }
         }
+        bucket = bucket->next;
     }
     ++map->num_entries;
     if (map->num_entries > map->num_buckets * GROW)

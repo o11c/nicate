@@ -24,7 +24,7 @@ int main()
     BuildTopLevel *top_decl_printf = build_top_decl(b, decl_printf);
 
     BuildExpression *zero = build_expr_int(b, 0);
-    BuildExpression *hello = build_expr_string(b, "Hello, World!");
+    BuildExpression *hello = build_expr_string(b, "Hello, World!\n");
     BuildExpression *expr_argc = build_expr_id(b, "argc");
     BuildExpression *expr_argv = build_expr_id(b, "argv");
     BuildExpression *expr_printf = build_expr_id(b, "printf");
