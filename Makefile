@@ -39,6 +39,8 @@ override CFLAGS += -MMD -MP
 .DELETE_ON_ERROR:
 
 hello.x: ${OBJECTS}
+# force order
+bridge.o builder.o: c89.gen.h
 
 %.x: %.o
 	${CC} ${LDFLAGS} $^ ${LDLIBS} -o $@
