@@ -54,6 +54,6 @@ hello.x: ${OBJECTS}
 clean:
 	rm -f *.x *.o *.d
 distclean: clean
-	rm -f c89.h c89.c
+	rm -f *.gen.*
 
 -include *.d

@@ -16,4 +16,4 @@ notifications:
     use_notice: true
 
 script:
-  - make
+  - make CC=$CC
