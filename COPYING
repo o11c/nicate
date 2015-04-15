@@ -1,0 +1,12 @@
+Nicate is collectively available under the GNU Lesser General Public License,
+version 3 or (at your choice) and later version. See lgpl-3.0.txt for details.
+
+Nicate's license does not necessarily apply to code generated *by* it; the
+license of the input applies. If the input is part of Nicate, then Nicate's
+license does apply.
+
+
+Some files originate from, or are closely related to, external projects with
+more permissive licenses:
+
+PMurHash.[hc]: public domain, from https://code.google.com/p/smhasher/

@@ -1,4 +1,41 @@
 #!/usr/bin/env python3
+#   Copyright © 2015 Ben Longbons
+#
+#   This file is part of Nicate.
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU Lesser General Public License as published
+#   by the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU Lesser General Public License for more details.
+#
+#   You should have received a copy of the GNU Lesser General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+generated_copyright = '''
+/*
+    Copyright © 2015 Ben Longbons
+
+    This file is part of Nicate.
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+'''
 
 # This grammar is only intended to emit code.
 #
@@ -588,9 +625,11 @@ def output(header, source):
 
     h('/* Generated file, edit c89.py instead. */')
     h('#pragma once')
+    h(generated_copyright)
     h()
     c('/* Generated file, edit c89.py instead. */')
-    c('#include "c89.h"')
+    c('#include "c89.gen.h"')
+    c(generated_copyright)
     c()
     c('#include <assert.h>')
     h('#include <stdbool.h>')
@@ -759,7 +798,7 @@ def output(header, source):
 
 def main():
     define()
-    with open('c89.h', 'w') as h, open('c89.c', 'w') as c:
+    with open('c89.gen.h', 'w') as h, open('c89.gen.c', 'w') as c:
         output(h, c)
 
 if __name__ == '__main__':

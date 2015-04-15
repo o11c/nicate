@@ -1,6 +1,5 @@
+# trivial file, no copyright
 *.o
 *.x
-c89.h
-c89.c
 *.d
-*.gen.c
+*.gen.*
