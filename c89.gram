@@ -1,0 +1,531 @@
+language c89
+
+keyword break
+keyword case
+keyword const
+keyword continue
+keyword default
+keyword do
+keyword else
+keyword enum
+keyword extern
+keyword for
+keyword goto
+keyword if
+keyword register
+keyword return
+keyword sizeof
+keyword static
+keyword struct
+keyword switch
+keyword typedef
+keyword union
+keyword volatile
+keyword while
+
+keyword char
+keyword double
+keyword float
+keyword int
+keyword long
+keyword short
+keyword signed
+keyword unsigned
+keyword void
+
+atom identifier
+atom typedef-name
+atom floating-constant
+atom decimal-constant
+atom octal-constant
+atom hexadecimal-constant
+atom character-constant
+atom string-literal
+
+symbol [ lbracket
+symbol ] rbracket
+symbol ( lparen
+symbol ) rparen
+symbol { lbrace
+symbol } rbrace
+symbol . dot
+symbol ... ellipsis
+symbol -> arrow
+symbol ++ incr
+symbol -- decr
+symbol & ampersand
+symbol * star
+symbol + plus
+symbol - minus
+symbol ~ tilde
+symbol ! bang
+symbol / slash
+symbol % percent
+symbol << lshift
+symbol >> rshift
+symbol < lt
+symbol > gt
+symbol <= le
+symbol >= ge
+symbol == eq
+symbol != ne
+symbol ^ caret
+symbol | pipe
+symbol && logical-and
+symbol || logical-or
+symbol ? query
+symbol : colon
+symbol = assign
+symbol *= star-assign
+symbol /= slash-assign
+symbol %= percent-assign
+symbol += plus-assign
+symbol -= minus-assign
+symbol <<= lshift-assign
+symbol >>= rshift-assign
+symbol &= ampersand-assign
+symbol ^= caret-assign
+symbol |= pipe-assign
+symbol , comma
+symbol ; semicolon
+# symbol # hash
+# symbol ## hash-hash
+
+constant:
+    floating-constant
+    integer-constant
+    character-constant
+integer-constant:
+    decimal-constant
+    octal-constant
+    hexadecimal-constant
+parenthesis-expression:
+    ( comma-expression )
+primary-expression:
+    identifier
+    constant
+    string-literal
+    parenthesis-expression
+index-expression:
+    postfix-expression [ comma-expression ]
+call-expression:
+    postfix-expression ( comma-expression_opt )
+dot-expression:
+    postfix-expression . identifier
+arrow-expression:
+    postfix-expression -> identifier
+post-increment-expression:
+    postfix-expression ++
+post-decrement-expression:
+    postfix-expression --
+postfix-expression:
+    primary-expression
+    index-expression
+    call-expression
+    dot-expression
+    arrow-expression
+    post-increment-expression
+    post-decrement-expression
+pre-increment-expression:
+    ++ unary-expression
+pre-decrement-expression:
+    -- unary-expression
+addressof-expression:
+    & unary-expression
+dereference-expression:
+    * unary-expression
+unary-plus-expression:
+    + unary-expression
+unary-minus-expression:
+    - unary-expression
+bitwise-not-expression:
+    ~ unary-expression
+logical-not-expression:
+    ! unary-expression
+sizeof-expression-expression:
+    sizeof unary-expression
+sizeof-type-expression:
+    sizeof ( type-name )
+cast-expression:
+    ( type-name ) unary-expression
+unary-expression:
+    postfix-expression
+    pre-increment-expression
+    pre-decrement-expression
+    addressof-expression
+    dereference-expression
+    unary-plus-expression
+    unary-minus-expression
+    bitwise-not-expression
+    logical-not-expression
+    sizeof-expression-expression
+    sizeof-type-expression
+    cast-expression
+times-expression:
+    multiplicative-expression * unary-expression
+divide-expression:
+    multiplicative-expression / unary-expression
+modulus-expression:
+    multiplicative-expression % unary-expression
+multiplicative-expression:
+    unary-expression
+    times-expression
+    divide-expression
+    modulus-expression
+plus-expression:
+    additive-expression + multiplicative-expression
+minus-expression:
+    additive-expression - multiplicative-expression
+additive-expression:
+    multiplicative-expression
+    plus-expression
+    minus-expression
+left-shift-expression:
+    shift-expression << additive-expression
+right-shift-expression:
+    shift-expression >> additive-expression
+shift-expression:
+    additive-expression
+    left-shift-expression
+    right-shift-expression
+compare-lt-expression:
+    relational-expression < shift-expression
+compare-gt-expression:
+    relational-expression > shift-expression
+compare-le-expression:
+    relational-expression <= shift-expression
+compare-ge-expression:
+    relational-expression >= shift-expression
+relational-expression:
+    shift-expression
+    compare-lt-expression
+    compare-gt-expression
+    compare-le-expression
+    compare-ge-expression
+compare-eq-expression:
+    equality-expression == relational-expression
+compare-ne-expression:
+    equality-expression != relational-expression
+equality-expression:
+    relational-expression
+    compare-eq-expression
+    compare-ne-expression
+bitwise-and-expression:
+    and-expression & equality-expression
+and-expression:
+    equality-expression
+    bitwise-and-expression
+bitwise-xor-expression:
+    exclusive-or-expression ^ and-expression
+exclusive-or-expression:
+    and-expression
+    bitwise-xor-expression
+bitwise-or-expression:
+    inclusive-or-expression | exclusive-or-expression
+inclusive-or-expression:
+    exclusive-or-expression
+    bitwise-or-expression
+binary-and-expression:
+    logical-and-expression && inclusive-or-expression
+logical-and-expression:
+    inclusive-or-expression
+    binary-and-expression
+binary-or-expression:
+    logical-or-expression || logical-and-expression
+logical-or-expression:
+    logical-and-expression
+    binary-or-expression
+ternary-expression:
+    logical-or-expression ? comma-expression : conditional-expression
+conditional-expression:
+    logical-or-expression
+    ternary-expression
+simple-assignment:
+    unary-expression = assignment-expression
+compound-times-assignment:
+    unary-expression *= assignment-expression
+compound-divide-assignment:
+    unary-expression /= assignment-expression
+compound-modulus-assignment:
+    unary-expression %= assignment-expression
+compound-plus-assignment:
+    unary-expression += assignment-expression
+compound-minus-assignment:
+    unary-expression -= assignment-expression
+compound-left-shift-assignment:
+    unary-expression <<= assignment-expression
+compound-right-shift-assignment:
+    unary-expression >>= assignment-expression
+compound-bitwise-and-assignment:
+    unary-expression &= assignment-expression
+compound-bitwise-xor-assignment:
+    unary-expression ^= assignment-expression
+compound-bitwise-or-assignment:
+    unary-expression |= assignment-expression
+assignment-expression:
+    conditional-expression
+    simple-assignment
+    compound-times-assignment
+    compound-divide-assignment
+    compound-modulus-assignment
+    compound-plus-assignment
+    compound-minus-assignment
+    compound-left-shift-assignment
+    compound-right-shift-assignment
+    compound-bitwise-and-assignment
+    compound-bitwise-xor-assignment
+    compound-bitwise-or-assignment
+binary-comma-expression:
+    comma-expression , assignment-expression
+comma-expression:
+    assignment-expression
+    binary-comma-expression
+declaration:
+    storage-class-specifier_opt specifier-qualifier-list init-declarator-list_opt ;
+multi-init-declarator-list:
+    init-declarator-list init-declarator
+init-declarator-list:
+    init-declarator
+    multi-init-declarator-list
+initialized-declarator:
+    declarator = initializer
+init-declarator:
+    declarator
+    initialized-declarator
+storage-class-specifier:
+    typedef
+    extern
+    static
+    register
+signed-char:
+    signed char
+unsigned-char:
+    unsigned char
+signed-short-int:
+    signed short int
+unsigned-short-int:
+    unsigned short int
+signed-int:
+    signed int
+unsigned-int:
+    unsigned int
+signed-long-int:
+    signed long int
+unsigned-long-int:
+    unsigned long int
+signed-long-long-int:
+    signed long long int
+unsigned-long-long-int:
+    unsigned long long int
+long-double:
+    long double
+type-specifier:
+    void
+    char
+    signed-char
+    unsigned-char
+    signed-short-int
+    unsigned-short-int
+    signed-int
+    unsigned-int
+    signed-long-int
+    unsigned-long-int
+    signed-long-long-int
+    unsigned-long-long-int
+    float
+    double
+    long-double
+    struct-or-union-specifier
+    enum-specifier
+    typedef-name
+full-struct:
+    struct-or-union identifier_opt { struct-declaration-list }
+forward-struct:
+    struct-or-union identifier
+struct-or-union-specifier:
+    full-struct
+    forward-struct
+struct-or-union:
+    struct
+    union
+multi-struct-declaration:
+    struct-declaration-list struct-declaration
+struct-declaration-list:
+    struct-declaration
+    multi-struct-declaration
+struct-declaration:
+    specifier-qualifier-list struct-declarator-list ;
+specifier-qualifier-list:
+    type-specifier type-qualifier-list_opt
+multi-struct-declarator:
+    struct-declarator-list , struct-declarator
+struct-declarator-list:
+    struct-declarator
+    multi-struct-declarator
+bitfield-declarator:
+    declarator_opt : conditional-expression
+struct-declarator:
+    declarator
+    bitfield-declarator
+full-enum:
+    enum identifier_opt { enumerator-list }
+forward-enum:
+    enum identifier
+enum-specifier:
+    full-enum
+    forward-enum
+multi-enumerator-list:
+    enumerator-list , enumerator
+enumerator-list:
+    enumerator
+    multi-enumerator-list
+initialized-enumeration-constant:
+    identifier = conditional-expression
+enumerator:
+    identifier
+    initialized-enumeration-constant
+type-qualifier:
+    const
+    volatile
+pointer-declarator:
+    * type-qualifier-list_opt declarator
+declarator:
+    direct-declarator
+    pointer-declarator
+parenthesis-declarator:
+    ( declarator )
+array-declarator:
+    direct-declarator [ conditional-expression_opt ]
+function-declarator:
+    direct-declarator ( parameter-type-list_opt )
+direct-declarator:
+    identifier
+    parenthesis-declarator
+    array-declarator
+    function-declarator
+multi-type-qualifier-list:
+    type-qualifier-list type-qualifier
+type-qualifier-list:
+    type-qualifier
+    multi-type-qualifier-list
+varargs-parameter-list:
+    parameter-list , ...
+parameter-type-list:
+    parameter-list
+    varargs-parameter-list
+multi-parameter-list:
+    parameter-list , parameter-declaration
+parameter-list:
+    parameter-declaration
+    multi-parameter-list
+named-parameter:
+    storage-class-specifier_opt specifier-qualifier-list declarator
+unnamed-parameter:
+    storage-class-specifier_opt specifier-qualifier-list abstract-declarator_opt
+parameter-declaration:
+    named-parameter
+    unnamed-parameter
+type-name:
+    specifier-qualifier-list abstract-declarator_opt
+leaf-pointer-abstract-declarator:
+    * type-qualifier-list_opt
+recursive-pointer-abstract-declarator:
+    * type-qualifier-list_opt abstract-declarator
+abstract-declarator:
+    direct-abstract-declarator
+    leaf-pointer-abstract-declarator
+    recursive-pointer-abstract-declarator
+parenthesis-abstract-declarator:
+    ( abstract-declarator )
+array-abstract-declarator:
+    direct-abstract-declarator_opt [ conditional-expression_opt ]
+function-abstract-declarator:
+    direct-abstract-declarator_opt ( parameter-type-list_opt )
+direct-abstract-declarator:
+    parenthesis-abstract-declarator
+    array-abstract-declarator
+    function-abstract-declarator
+list-initializer:
+    { initializer-list ,_opt }
+initializer:
+    assignment-expression
+    list-initializer
+multi-initializer-list:
+    initializer-list , initializer
+initializer-list:
+    initializer
+    multi-initializer-list
+statement:
+    labeled-statement
+    compound-statement
+    expression-statement
+    selection-statement
+    iteration-statement
+    jump-statement
+label-statement:
+    identifier : statement
+case-statement:
+    case conditional-expression : statement
+default-statement:
+    default : statement
+labeled-statement:
+    label-statement
+    case-statement
+    default-statement
+compound-statement:
+    { declaration-list_opt statement-list_opt }
+multi-declaration-list:
+    declaration-list declaration
+declaration-list:
+    declaration
+    multi-declaration-list
+multi-statement-list:
+    statement-list statement
+statement-list:
+    statement
+    multi-statement-list
+expression-statement:
+    comma-expression_opt ;
+if-statement:
+    if ( comma-expression ) statement
+if-else-statement:
+    if ( comma-expression ) statement else statement
+switch-statement:
+    switch ( comma-expression ) statement
+selection-statement:
+    if-statement
+    if-else-statement
+    switch-statement
+while-statement:
+    while ( comma-expression ) statement
+do-while-statement:
+    do statement while ( comma-expression ) ;
+for-statement:
+    for ( comma-expression_opt ; comma-expression_opt ; comma-expression_opt ) statement
+iteration-statement:
+    while-statement
+    do-while-statement
+    for-statement
+goto-statement:
+    goto identifier ;
+continue-statement:
+    continue ;
+break-statement:
+    break ;
+return-statement:
+    return comma-expression_opt ;
+jump-statement:
+    goto-statement
+    continue-statement
+    break-statement
+    return-statement
+multi-translation-unit:
+    translation-unit external-declaration
+translation-unit:
+    external-declaration
+    multi-translation-unit
+external-declaration:
+    function-definition
+    declaration
+function-definition:
+    storage-class-specifier_opt specifier-qualifier-list declarator compound-statement

@@ -53,7 +53,9 @@ lib%.so: %.o
 	${CC} ${LDFLAGS} $^ ${LDLIBS} -o $@
 %.o: %.c
 	${CC} ${CPPFLAGS} ${CFLAGS} -c -o $@ $<
-%.gen.c %.gen.h: %.py
+%.gen.c %.gen.h: %.gram grammar.py
+	./grammar.py $<
+%.gen.c: %.py
 	./$<
 %.gen.c: %.x
 	./$< > $@
