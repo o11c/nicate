@@ -17,3 +17,7 @@ Python3 APIs:
   - logical c89 construction and output
 
 See hello.c and hello2.py for example client code.
+
+For support, join #o11c on irc.freenode.net
+but you might also find like-minded people on #proglangdesign, ##parsers,
+and #compilers.

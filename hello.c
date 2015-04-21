@@ -67,7 +67,7 @@ int main()
 
     BuildTopLevel *tops[] = {top_decl_printf, def_main};
     BuildTranslationUnit *tu = build_tu(b, ARRAY_PAIR(tops));
-    builder_emit_tu(tu, stdout);
+    builder_emit_tu_to_file(tu, stdout);
     builder_destroy(b);
     return 0;
 }
