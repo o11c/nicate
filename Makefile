@@ -45,7 +45,7 @@ hello.x: hello.o libnicate.so
 libnicate.so: ${LIB_OBJECTS}
 # force order
 bridge.o builder.o: c89.gen.h
-hello2.gen.c: libnicate.so
+hello2.gen.c: libnicate.so nicate.py
 
 lib%.so: %.o
 	${CC} -shared ${LDFLAGS} $^ ${LDLIBS} -o $@

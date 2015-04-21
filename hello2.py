@@ -62,7 +62,7 @@ def main():
     tops = [top_decl_printf, def_main]
     tu = b.tu(tops)
     with open('hello2.gen.c', 'w') as f:
-        tu.emit(f)
+        tu.emit_to_file(f)
 
 if __name__ == '__main__':
     main()

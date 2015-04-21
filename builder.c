@@ -143,9 +143,24 @@ void builder_destroy(Builder *b)
     free(b);
 }
 
-void builder_emit_tu(BuildTranslationUnit *tu, FILE *fp)
+void builder_emit_tu_to_file(BuildTranslationUnit *tu, FILE *fp)
 {
     c89_emit((C89_Ast *)tu->ast_tu, fp);
+}
+
+char *builder_emit_tu_to_string(BuildTranslationUnit *tu)
+{
+    char *rv;
+    size_t sz;
+    FILE *fp = open_memstream(&rv, &sz);
+    builder_emit_tu_to_file(tu, fp);
+    fclose(fp);
+    return rv;
+}
+
+void builder_free_string(char *p)
+{
+    free(p);
 }
 
 BuildTranslationUnit *build_tu(Builder *b, size_t ntops, BuildTopLevel **tops)
@@ -653,8 +668,7 @@ BuildStatement *build_stmt_if_else(Builder *b, BuildExpression *cond, BuildState
     C89_AnyCommaExpression *expr = build_expr_to_comma(b, cond);
     C89_TreeCompoundStatement *if_comp = build_stmt_to_compound(b, if_true);
     C89_AnyStatement *if_body = (C89_AnyStatement *)if_comp;
-    C89_TreeCompoundStatement *else_comp = build_stmt_to_compound(b, if_false);
-    C89_AnyStatement *else_body = (C89_AnyStatement *)else_comp;
+    C89_AnyStatement *else_body = build_stmt_to_else_body(b, if_false);
     C89_TreeIfElseStatement *stmt = c89_create_tree_if_else_statement(b->pool, b->kw_if, b->lparen, expr, b->rparen, if_body, b->kw_else, else_body);
     C89_AnyStatement *ast = (C89_AnyStatement *)stmt;
     return build_stmt_ast(b, ast);
@@ -828,7 +842,7 @@ BuildExpression *build_expr_int_oct(Builder *b, uintmax_t i, unsigned min_len)
     C89_TokOctalConstant *p;
     if (min_len > 22)
         min_len = 22;
-    rv = sprintf(buf, "%#*jo", min_len + 1, i);
+    rv = sprintf(buf, "%0#*jo", min_len + 1, i);
     assert (rv >= 0 && (size_t)rv < sizeof(buf));
     p = c89_create_tok_octal_constant(b->pool, buf);
     return build_expr_from_primary(b, (C89_AnyPrimaryExpression *)p);
@@ -840,7 +854,7 @@ BuildExpression *build_expr_int_hex(Builder *b, uintmax_t i, unsigned min_len)
     C89_TokHexadecimalConstant *p;
     if (min_len > 16)
         min_len = 16;
-    rv = sprintf(buf, "%#*jx", min_len + 2, i);
+    rv = sprintf(buf, "%0#*jx", min_len + 2, i);
     assert (rv >= 0 && (size_t)rv < sizeof(buf));
     p = c89_create_tok_hexadecimal_constant(b->pool, buf);
     return build_expr_from_primary(b, (C89_AnyPrimaryExpression *)p);
@@ -849,13 +863,13 @@ BuildExpression *build_expr_float(Builder *b, long double f)
 {
     char buf[1 + 1 + 20 + 1 + 1 + 4 + 1];
     int rv;
-    C89_TokFloat *p;
+    C89_TokFloatingConstant *p;
     long double f2;
     rv = sprintf(buf, "%.21Le", f);
     assert (rv >= 0 && (size_t)rv < sizeof(buf));
     rv = sscanf(buf, "%Lf", &f2);
     assert (rv == 1 && f == f2);
-    p = c89_create_tok_float(b->pool, buf);
+    p = c89_create_tok_floating_constant(b->pool, buf);
     return build_expr_from_primary(b, (C89_AnyPrimaryExpression *)p);
 }
 

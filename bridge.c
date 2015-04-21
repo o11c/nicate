@@ -105,7 +105,7 @@ BuildType *build_type_array_ast(Builder *b, BuildType *element, C89_OptCondition
     rv.array_size = size;
     rv.is_const = isc;
     rv.is_volatile = isv;
-    assert (!element->is_const && !element->is_volatile);
+    assert (!isc && !isv);
     return (BuildType *)pool_intern(b->pool, &rv, sizeof(rv));
 }
 BuildType *build_type_fun_ast(Builder *b, BuildType *target, C89_OptParameterTypeList *args, bool isc, bool isv)
@@ -116,6 +116,7 @@ BuildType *build_type_fun_ast(Builder *b, BuildType *target, C89_OptParameterTyp
     rv.args = args;
     rv.is_const = isc;
     rv.is_volatile = isv;
+    assert (!isc && !isv);
     return (BuildType *)pool_intern(b->pool, &rv, sizeof(rv));
 }
 BuildType *build_type_copy_ast(Builder *b, BuildType copy)
@@ -315,6 +316,20 @@ C89_TreeCompoundStatement *build_stmt_to_compound(Builder *b, BuildStatement *st
         C89_OptStatementList *stmts = (C89_OptStatementList *)build_stmt_to_stmt(b, stmt);
         return c89_create_tree_compound_statement(b->pool, b->lbrace, decls, stmts, b->rbrace);
     }
+}
+C89_AnyStatement *build_stmt_to_else_body(Builder *b, BuildStatement *stmt)
+{
+    C89_AnyStatement *ast_stmt = stmt->ast_stmt;
+    C89_Ast *ast = (C89_Ast *)ast_stmt;
+    if (c89_is_tree_if_statement(ast))
+    {
+        return ast_stmt;
+    }
+    if (c89_is_tree_if_else_statement(ast))
+    {
+        return ast_stmt;
+    }
+    return (C89_AnyStatement *)build_stmt_to_compound(b, stmt);
 }
 
 C89_AnyInitializer *build_init_to_init(Builder *b, BuildInitializer *init)

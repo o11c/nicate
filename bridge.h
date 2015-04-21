@@ -244,6 +244,7 @@ BuildTypePairAbstractDeclarator build_type_to_decl_abstract(Builder *b, BuildTyp
 
 C89_AnyStatement *build_stmt_to_stmt(Builder *b, BuildStatement *stmt);
 C89_TreeCompoundStatement *build_stmt_to_compound(Builder *b, BuildStatement *stmt);
+C89_AnyStatement *build_stmt_to_else_body(Builder *b, BuildStatement *stmt);
 
 C89_AnyInitializer *build_init_to_init(Builder *b, BuildInitializer *init);
 

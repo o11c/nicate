@@ -28,7 +28,9 @@
 Builder *builder_create(void);
 void builder_destroy(Builder *b);
 
-void builder_emit_tu(BuildTranslationUnit *tu, FILE *fp);
+void builder_emit_tu_to_file(BuildTranslationUnit *tu, FILE *fp);
+char *builder_emit_tu_to_string(BuildTranslationUnit *tu);
+void builder_free_string(char *);
 
 BuildTranslationUnit *build_tu(Builder *b, size_t ntops, BuildTopLevel **tops);
 
@@ -147,6 +149,7 @@ BuildExpression *build_expr_bitwise_xor(Builder *b, BuildExpression *lhs, BuildE
 BuildExpression *build_expr_bitwise_or(Builder *b, BuildExpression *lhs, BuildExpression *rhs);
 BuildExpression *build_expr_logical_and(Builder *b, BuildExpression *lhs, BuildExpression *rhs);
 BuildExpression *build_expr_logical_or(Builder *b, BuildExpression *lhs, BuildExpression *rhs);
+
 BuildExpression *build_expr_conditional(Builder *b, BuildExpression *cond, BuildExpression *if_true, BuildExpression *if_false);
 
 BuildExpression *build_expr_assign(Builder *b, BuildExpression *lhs, BuildExpression *rhs);
@@ -160,4 +163,5 @@ BuildExpression *build_expr_assign_rshift(Builder *b, BuildExpression *lhs, Buil
 BuildExpression *build_expr_assign_bitwise_and(Builder *b, BuildExpression *lhs, BuildExpression *rhs);
 BuildExpression *build_expr_assign_bitwise_xor(Builder *b, BuildExpression *lhs, BuildExpression *rhs);
 BuildExpression *build_expr_assign_bitwise_or(Builder *b, BuildExpression *lhs, BuildExpression *rhs);
+
 BuildExpression *build_expr_comma(Builder *b, BuildExpression *lhs, BuildExpression *rhs);
