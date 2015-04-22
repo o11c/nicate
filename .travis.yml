@@ -22,5 +22,4 @@ install:
   - python3 get-pip.py --user
   - pip3 install --user cffi pytest
 script:
-  - make CC=$CC
-  - ./test_nicate.py
+  - make test CC=$CC

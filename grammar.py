@@ -17,6 +17,8 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import string
+
 generated_copyright = '''
 /*
     Copyright © 2015 Ben Longbons
@@ -45,7 +47,9 @@ class IdentifierCase:
     __slots__ = ('space', 'dash', 'lower', 'upper', 'camel', 'visual')
 
     def __init__(self, name, visual=None):
-        assert name.replace('-', '').islower(), name
+        for bit in name.split('-'):
+            bit = bit.rstrip(string.digits)
+            assert bit and all(c.islower() for c in bit), name
         self.dash = name
         space = self.space = name.replace('-', ' ')
         lower = self.lower = name.replace('-', '_')
@@ -62,7 +66,26 @@ class IdentifierCase:
         return 'IdentifierCase(%s, <space=%r, lower=%r, upper=%r, camel=%r>)' % (name, self.space, self.lower, self.upper, self.camel)
 
     def __add__(self, other):
-        return IdentifierCase('%s-%s' % (self.dash, other.dash), '%s-%s' % (self.visual, other.visual))
+        self_dash = self.dash
+        self_visual = self.visual
+        if isinstance(other, str):
+            other_dash = other
+            other_visual = other
+        else:
+            other_dash = other.dash
+            other_visual = other.visual
+        return IdentifierCase('%s-%s' % (self_dash, other_dash), '%s-%s' % (self_visual, other_visual))
+
+    def __radd__(self, other):
+        self_dash = self.dash
+        self_visual = self.visual
+        if isinstance(other, str):
+            other_dash = other
+            other_visual = other
+        else:
+            other_dash = other.dash
+            other_visual = other.visual
+        return IdentifierCase('%s-%s' % (other_dash, self_dash), '%s-%s' % (other_visual, self_visual))
 
 class Grammar:
     __slots__ = ('language', 'rules')
@@ -193,23 +216,46 @@ class Alternative(Rule):
         self.tag = IdentifierCase('any-' + tag, tag)
         self.bits = list(bits)
 
+class FormatArgs:
+    pass
+
 def emit(grammar, header, source):
-    def h(*args, **kwargs):
-        print(*args, file=header, **kwargs)
-    def c(*args, **kwargs):
-        print(*args, file=source, **kwargs)
+    f = FormatArgs()
+    def h(arg=''):
+        arg = arg % f.__dict__
+        print(arg, file=header)
+    def c(arg=''):
+        arg = arg % f.__dict__
+        print(arg, file=source)
     def s(sig):
-        h(sig, ';', sep='')
+        h(sig + ';')
         c(sig)
 
     ast_values = sorted(grammar.rules.values(), key=lambda x: x.tag.space)
+    lang = grammar.language
+    nothing = lang + 'nothing'
 
-    h('/* Generated file, edit c89.gram instead. */')
+    f.dash = lang.dash
+    f.upper = lang.upper
+    f.Ast = (lang + 'ast').camel
+    f.AstType = (lang + 'ast-type').camel
+    f.Nothing = nothing.camel
+    f.nothing = nothing.lower
+    f.NOTHING = nothing.upper
+    f.create_nothing = (lang + 'create-nothing').lower
+    f.create_terminal = (lang + 'create-terminal').lower
+    f.create_nonterminal = (lang + 'create-nonterminal').lower
+    f.is_nothing = (lang + 'is-nothing').lower
+    f.emit_impl_impl = (lang + 'emit-impl-impl').lower
+    f.emit_impl = (lang + 'emit-impl').lower
+    f.emit = (lang + 'emit').lower
+
+    h('/* Generated file, edit %(dash)s.gram instead. */')
     h('#pragma once')
     h(generated_copyright)
     h()
-    c('/* Generated file, edit c89.gram instead. */')
-    c('#include "c89.gen.h"')
+    c('/* Generated file, edit %(dash)s.gram instead. */')
+    c('#include "%(dash)s.gen.h"')
     c(generated_copyright)
     c()
     c('#include <assert.h>')
@@ -218,55 +264,58 @@ def emit(grammar, header, source):
     h('#include <stdio.h>')
     c('#include <string.h>')
     h()
+    c()
     h('#include "fwd.h"')
     c('#include "pool.h"')
     h()
     h()
     c()
     c()
-    h('typedef struct C89_Nothing C89_Nothing;')
+    h('typedef struct %(Ast)s %(Ast)s;')
+    h()
+    h('typedef struct %(Nothing)s %(Nothing)s;')
     for ast in ast_values:
-        h('typedef struct C89_{0} C89_{0};'.format(ast.tag.camel))
+        h('typedef struct {0} {0};'.format((lang + ast.tag).camel))
     h()
     c('/* Concrete types only. */')
-    c('typedef enum C89_AstType C89_AstType;')
-    c('enum C89_AstType')
+    c('typedef enum %(AstType)s %(AstType)s;')
+    c('enum %(AstType)s')
     c('{')
-    c('    C89_NOTHING,')
+    c('    %(NOTHING)s,')
     for ast in ast_values:
         if isinstance(ast, (Term, Sequence)):
-            c('    C89_%s,' % ast.tag.upper)
+            c('    {0},'.format((lang + ast.tag).upper))
     c('};')
     c()
-    c('struct C89_Ast')
+    c('struct %(Ast)s')
     c('{')
-    c('    C89_AstType type;')
+    c('    %(AstType)s type;')
     c('    size_t total_tokens;')
     c('    size_t num_children;')
-    c('    union { char *raw; C89_Ast **children; };')
+    c('    union { char *raw; %(Ast)s **children; };')
     c('};')
     c()
-    c('static C89_Ast c89_nothing = {C89_NOTHING, 0, 0, {""}};')
+    c('static %(Ast)s %(nothing)s = {%(NOTHING)s, 0, 0, {""}};')
     c()
     h('/* Construction. */')
-    s('C89_Nothing *c89_create_nothing(Pool *pool)')
+    s('%(Nothing)s *%(create_nothing)s(Pool *pool)')
     c('{')
     c('    (void)pool;')
-    c('    return (C89_Nothing *)&c89_nothing;')
+    c('    return (%(Nothing)s *)&%(nothing)s;')
     c('}')
-    c('static C89_Ast *c89_create_terminal(Pool *pool, C89_AstType type, const char *raw)')
+    c('static %(Ast)s *%(create_terminal)s(Pool *pool, %(AstType)s type, const char *raw)')
     c('{')
-    c('    C89_Ast rv;')
+    c('    %(Ast)s rv;')
     c('    memset(&rv, 0, sizeof(rv));')
     c('    rv.type = type;')
     c('    rv.total_tokens = 1;')
     c('    rv.num_children = 0;')
     c('    rv.raw = (char *)pool_intern_string(pool, raw);')
-    c('    return (C89_Ast *)(const C89_Ast *)pool_intern(pool, &rv, sizeof(rv));')
+    c('    return (%(Ast)s *)(const %(Ast)s *)pool_intern(pool, &rv, sizeof(rv));')
     c('}')
-    c('static C89_Ast *c89_create_nonterminal(Pool *pool, C89_AstType type, size_t nargs, C89_Ast **args)')
+    c('static %(Ast)s *%(create_nonterminal)s(Pool *pool, %(AstType)s type, size_t nargs, %(Ast)s **args)')
     c('{')
-    c('    C89_Ast rv;')
+    c('    %(Ast)s rv;')
     c('    size_t i;')
     c('    assert (nargs >= 2);')
     c('    memset(&rv, 0, sizeof(rv));')
@@ -277,43 +326,45 @@ def emit(grammar, header, source):
     c('        rv.total_tokens += args[i]->total_tokens;')
     c('    }')
     c('    rv.num_children = nargs;')
-    c('    rv.children = (C89_Ast **)pool_intern(pool, args, nargs * sizeof(C89_Ast *));')
-    c('    return (C89_Ast *)(const C89_Ast *)pool_intern(pool, &rv, sizeof(rv));')
+    c('    rv.children = (%(Ast)s **)pool_intern(pool, args, nargs * sizeof(%(Ast)s *));')
+    c('    return (%(Ast)s *)(const %(Ast)s *)pool_intern(pool, &rv, sizeof(rv));')
     c('}')
     for ast in ast_values:
         if isinstance(ast, (Term, Sequence)):
             if isinstance(ast, Term):
-                s('C89_%s *c89_create_%s(Pool *pool, const char *raw)' % (ast.tag.camel, ast.tag.lower))
+                s('%s *%s(Pool *pool, const char *raw)' % ((lang + ast.tag).camel, (lang + 'create' + ast.tag).lower))
                 c('{')
-                c('    return (C89_%s *)c89_create_terminal(pool, C89_%s, raw);' % (ast.tag.camel, ast.tag.upper))
+                c('    return (%s *)%%(create_terminal)s(pool, %s, raw);' % ((lang + ast.tag).camel, (lang + ast.tag).upper))
                 c('}')
             if isinstance(ast, Sequence):
                 ba = ast.bits
                 # this is needed for e.g. tree_for_statement, which has 3 opt_comma_expression and 2 tok_semicolon
                 bn = ['%s%d' % (b.tag.lower, 1 + ba[:i].count(b)) if ba.count(b) > 1 else b.tag.lower for i, b in enumerate(ba)]
                 assert len(ba) == len(set(bn))
-                s('C89_%s *c89_create_%s(Pool *pool, %s)' % (ast.tag.camel, ast.tag.lower, ', '.join('C89_%s *%s' % (b.tag.camel, n) for b, n in zip(ba, bn))))
+                args = ', '.join('%s *%s' % ((lang + b.tag).camel, n) for b, n in zip(ba, bn))
+                s('%s *%s(Pool *pool, %s)' % ((lang + ast.tag).camel, (lang + 'create' + ast.tag).lower, args))
                 c('{')
-                c('    C89_Ast *args[%d] = {%s};' % (len(bn), ', '.join('(C89_Ast *)%s' % n for n in bn)))
+                args = ', '.join('(%%(Ast)s *)%s' % n for n in bn)
+                c('    %%(Ast)s *args[%d] = {%s};' % (len(bn), args))
                 for b, n in zip(ba, bn):
-                    c('    assert (c89_is_%s((C89_Ast *)%s));' % (b.tag.lower, n))
-                c('    return (C89_%s *)c89_create_nonterminal(pool, C89_%s, %d, args);' % (ast.tag.camel, ast.tag.upper, len(bn)))
+                    c('    assert (%s((%%(Ast)s *)%s));' % ((lang + 'is' + b.tag).lower, n))
+                c('    return (%s *)%%(create_nonterminal)s(pool, %s, %d, args);' % ((lang + ast.tag).camel, (lang + ast.tag).upper, len(bn)))
                 c('}')
     h()
     h('/* Type checking. */')
-    s('bool c89_is_nothing(C89_Ast *ast)')
+    s('bool %(is_nothing)s(%(Ast)s *ast)')
     c('{')
-    c('    return ast->type == C89_NOTHING;')
+    c('    return ast->type == %(NOTHING)s;')
     c('}')
     for ast in ast_values:
-        s('bool c89_is_%s(C89_Ast *ast)' % ast.tag.lower)
+        s('bool %s(%%(Ast)s *ast)' % (lang + 'is' + ast.tag).lower)
         c('{')
         if isinstance(ast, (Term, Sequence)):
-            c('    return ast->type == C89_%s;' % ast.tag.upper)
+            c('    return ast->type == %s;' % (lang + ast.tag).upper)
         if isinstance(ast, Option):
-            c('    return c89_is_nothing(ast) || c89_is_%s(ast);' % ast.child.tag.lower)
+            c('    return %%(is_nothing)s(ast) || %s(ast);' % (lang + 'is' + ast.child.tag).lower)
         if isinstance(ast, Alternative):
-            c('    return %s;' % (' || '.join('c89_is_%s(ast)' % b.tag.lower for b in ast.bits)))
+            c('    return %s;' % (' || '.join('%s(ast)' % (lang + 'is' + b.tag).lower for b in ast.bits)))
         c('}')
     h()
     h('/* Output. */')
@@ -322,12 +373,12 @@ def emit(grammar, header, source):
     c('{')
     c('    size_t indentation;')
     c('    const char *prev;')
-    c('    C89_AstType prev_parent;')
+    c('    %(AstType)s prev_parent;')
     c('};')
-    c('static void c89_emit_impl_impl(const char *next, C89_AstType next_parent, FILE *fp, IndentationInfo *info)')
+    c('static void %(emit_impl_impl)s(const char *next, %(AstType)s next_parent, FILE *fp, IndentationInfo *info)')
     c('{')
     c('    const char *const prev = info->prev;')
-    c('    C89_AstType const prev_parent = info->prev_parent;')
+    c('    %(AstType)s const prev_parent = info->prev_parent;')
     c('    if (!*next)')
     c('        return;')
     c('    if (strcmp(next, "}") == 0)')
@@ -336,37 +387,39 @@ def emit(grammar, header, source):
     c('    {')
     c('        bool newline = false;')
     c('        bool no_space = false;')
-    c('        newline |= strcmp(prev, ";") == 0 && prev_parent != C89_TREE_FOR_STATEMENT;')
-    c('        newline |= strcmp(next, "{") == 0 && next_parent != C89_TREE_LIST_INITIALIZER;')
-    c('        newline |= strcmp(prev, "{") == 0 && prev_parent != C89_TREE_LIST_INITIALIZER;')
-    c('        newline |= strcmp(next, "}") == 0 && next_parent != C89_TREE_LIST_INITIALIZER;')
-    c('        newline |= strcmp(prev, "}") == 0 && prev_parent != C89_TREE_LIST_INITIALIZER && strcmp(next, ";") != 0;')
-    c('        no_space |= strcmp(prev, "(") == 0;')
-    c('        no_space |= strcmp(next, "(") == 0 && (next_parent == C89_TREE_CALL_EXPRESSION || next_parent == C89_TREE_FUNCTION_DECLARATOR || next_parent == C89_TREE_FUNCTION_ABSTRACT_DECLARATOR);')
-    c('        no_space |= strcmp(next, ")") == 0;')
-    c('        no_space |= strcmp(prev, "[") == 0;')
-    c('        no_space |= strcmp(next, "[") == 0;')
-    c('        no_space |= strcmp(next, "]") == 0;')
-    c('        no_space |= strcmp(next, ",") == 0;')
-    c('        no_space |= strcmp(next, ";") == 0;')
-    c('        no_space |= strcmp(prev, "*") == 0 && (prev_parent == C89_TREE_POINTER_DECLARATOR || prev_parent == C89_TREE_LEAF_POINTER_ABSTRACT_DECLARATOR || prev_parent == C89_TREE_RECURSIVE_POINTER_ABSTRACT_DECLARATOR);')
-    c('        no_space |= strcmp(next, ":") == 0 && (next_parent == C89_TREE_LABEL_STATEMENT || next_parent == C89_TREE_CASE_STATEMENT || next_parent == C89_TREE_DEFAULT_STATEMENT);')
-    c('        no_space |= strcmp(prev, ".") == 0;')
-    c('        no_space |= strcmp(next, ".") == 0;')
-    c('        no_space |= strcmp(prev, "->") == 0;')
-    c('        no_space |= strcmp(next, "->") == 0;')
-    c('        no_space |= strcmp(next, "++") == 0 && next_parent == C89_TREE_POST_INCREMENT_EXPRESSION;')
-    c('        no_space |= strcmp(next, "--") == 0 && next_parent == C89_TREE_POST_DECREMENT_EXPRESSION;')
-    c('        no_space |= strcmp(prev, "++") == 0 && prev_parent == C89_TREE_PRE_INCREMENT_EXPRESSION;')
-    c('        no_space |= strcmp(prev, "--") == 0 && prev_parent == C89_TREE_PRE_DECREMENT_EXPRESSION;')
-    c('        no_space |= strcmp(prev, "&") == 0 && next[0] != \'&\' && prev_parent == C89_TREE_ADDRESSOF_EXPRESSION;')
-    c('        no_space |= strcmp(prev, "*") == 0 && prev_parent == C89_TREE_DEREFERENCE_EXPRESSION;')
-    c('        no_space |= strcmp(prev, "+") == 0 && next[0] != \'+\' && prev_parent == C89_TREE_UNARY_PLUS_EXPRESSION;')
-    c('        no_space |= strcmp(prev, "-") == 0 && next[0] != \'-\' && prev_parent == C89_TREE_UNARY_MINUS_EXPRESSION;')
-    c('        no_space |= strcmp(prev, "~") == 0 && prev_parent == C89_TREE_BITWISE_NOT_EXPRESSION;')
-    c('        no_space |= strcmp(prev, "!") == 0 && prev_parent == C89_TREE_LOGICAL_NOT_EXPRESSION;')
-    c('        no_space |= strcmp(prev, "sizeof") == 0 && strcmp(next, "(") == 0;')
-    c('        no_space |= strcmp(prev, ")") == 0 && prev_parent == C89_TREE_CAST_EXPRESSION;')
+    if lang.upper == 'C89':
+        # sorry, other languages don't get pretty-printing yet.
+        c('        newline |= strcmp(prev, ";") == 0 && prev_parent != %(upper)s_TREE_FOR_STATEMENT;')
+        c('        newline |= strcmp(next, "{") == 0 && next_parent != %(upper)s_TREE_LIST_INITIALIZER;')
+        c('        newline |= strcmp(prev, "{") == 0 && prev_parent != %(upper)s_TREE_LIST_INITIALIZER;')
+        c('        newline |= strcmp(next, "}") == 0 && next_parent != %(upper)s_TREE_LIST_INITIALIZER;')
+        c('        newline |= strcmp(prev, "}") == 0 && prev_parent != %(upper)s_TREE_LIST_INITIALIZER && strcmp(next, ";") != 0;')
+        c('        no_space |= strcmp(prev, "(") == 0;')
+        c('        no_space |= strcmp(next, "(") == 0 && (next_parent == %(upper)s_TREE_CALL_EXPRESSION || next_parent == %(upper)s_TREE_FUNCTION_DECLARATOR || next_parent == %(upper)s_TREE_FUNCTION_ABSTRACT_DECLARATOR);')
+        c('        no_space |= strcmp(next, ")") == 0;')
+        c('        no_space |= strcmp(prev, "[") == 0;')
+        c('        no_space |= strcmp(next, "[") == 0;')
+        c('        no_space |= strcmp(next, "]") == 0;')
+        c('        no_space |= strcmp(next, ",") == 0;')
+        c('        no_space |= strcmp(next, ";") == 0;')
+        c('        no_space |= strcmp(prev, "*") == 0 && (prev_parent == %(upper)s_TREE_POINTER_DECLARATOR || prev_parent == %(upper)s_TREE_LEAF_POINTER_ABSTRACT_DECLARATOR || prev_parent == %(upper)s_TREE_RECURSIVE_POINTER_ABSTRACT_DECLARATOR);')
+        c('        no_space |= strcmp(next, ":") == 0 && (next_parent == %(upper)s_TREE_LABEL_STATEMENT || next_parent == %(upper)s_TREE_CASE_STATEMENT || next_parent == %(upper)s_TREE_DEFAULT_STATEMENT);')
+        c('        no_space |= strcmp(prev, ".") == 0;')
+        c('        no_space |= strcmp(next, ".") == 0;')
+        c('        no_space |= strcmp(prev, "->") == 0;')
+        c('        no_space |= strcmp(next, "->") == 0;')
+        c('        no_space |= strcmp(next, "++") == 0 && next_parent == %(upper)s_TREE_POST_INCREMENT_EXPRESSION;')
+        c('        no_space |= strcmp(next, "--") == 0 && next_parent == %(upper)s_TREE_POST_DECREMENT_EXPRESSION;')
+        c('        no_space |= strcmp(prev, "++") == 0 && prev_parent == %(upper)s_TREE_PRE_INCREMENT_EXPRESSION;')
+        c('        no_space |= strcmp(prev, "--") == 0 && prev_parent == %(upper)s_TREE_PRE_DECREMENT_EXPRESSION;')
+        c('        no_space |= strcmp(prev, "&") == 0 && next[0] != \'&\' && prev_parent == %(upper)s_TREE_ADDRESSOF_EXPRESSION;')
+        c('        no_space |= strcmp(prev, "*") == 0 && prev_parent == %(upper)s_TREE_DEREFERENCE_EXPRESSION;')
+        c('        no_space |= strcmp(prev, "+") == 0 && next[0] != \'+\' && prev_parent == %(upper)s_TREE_UNARY_PLUS_EXPRESSION;')
+        c('        no_space |= strcmp(prev, "-") == 0 && next[0] != \'-\' && prev_parent == %(upper)s_TREE_UNARY_MINUS_EXPRESSION;')
+        c('        no_space |= strcmp(prev, "~") == 0 && prev_parent == %(upper)s_TREE_BITWISE_NOT_EXPRESSION;')
+        c('        no_space |= strcmp(prev, "!") == 0 && prev_parent == %(upper)s_TREE_LOGICAL_NOT_EXPRESSION;')
+        c('        no_space |= strcmp(prev, "sizeof") == 0 && strcmp(next, "(") == 0;')
+        c('        no_space |= strcmp(prev, ")") == 0 && prev_parent == %(upper)s_TREE_CAST_EXPRESSION;')
     c('        if (newline)')
     c('        {')
     c('            size_t i;')
@@ -383,23 +436,23 @@ def emit(grammar, header, source):
     c('    info->prev_parent = next_parent;')
     c('    fputs(next, fp);')
     c('}')
-    c('static void c89_emit_impl(C89_Ast *ast, C89_AstType parent, FILE *fp, IndentationInfo *info)')
+    c('static void %(emit_impl)s(%(Ast)s *ast, %(AstType)s parent, FILE *fp, IndentationInfo *info)')
     c('{')
     c('    size_t i;')
     c('    if (ast->num_children == 0)')
     c('    {')
-    c('         c89_emit_impl_impl(ast->raw, parent, fp, info);')
+    c('         %(emit_impl_impl)s(ast->raw, parent, fp, info);')
     c('    }')
     c('    for (i = 0; i < ast->num_children; ++i)')
     c('    {')
-    c('        c89_emit_impl(ast->children[i], ast->type, fp, info);')
+    c('        %(emit_impl)s(ast->children[i], ast->type, fp, info);')
     c('    }')
     c('}')
-    s('void c89_emit(C89_Ast *ast, FILE *fp)')
+    s('void %(emit)s(%(Ast)s *ast, FILE *fp)')
     c('{')
     c('    IndentationInfo info;')
     c('    memset(&info, 0, sizeof(info));');
-    c('    c89_emit_impl(ast, C89_NOTHING, fp, &info);')
+    c('    %(emit_impl)s(ast, %(NOTHING)s, fp, &info);')
     c('    fputc(\'\\n\', fp);')
     c('}')
 
@@ -411,7 +464,7 @@ def main(args=None):
         print('Usage: ./gram.py foo.gram')
     with open(args[0]) as f:
         g = Grammar(f)
-    assert args[0] == '%s.gram' % g.language.dash
+    assert args[0] == '%s.gram' % g.language.dash, args[0]
     hname = '%s.gen.h' % g.language.dash
     cname = '%s.gen.c' % g.language.dash
     with open(hname, 'w') as h, open(cname, 'w') as c:

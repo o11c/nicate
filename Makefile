@@ -40,6 +40,8 @@ export LD_LIBRARY_PATH:=.:${LD_LIBRARY_PATH}
 .DELETE_ON_ERROR:
 
 default: hello.gen.run hello2.gen.run
+test: default
+	./test_nicate.py
 
 hello.x: hello.o libnicate.so
 libnicate.so: ${LIB_OBJECTS}

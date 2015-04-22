@@ -26,8 +26,6 @@ typedef struct HashMap HashMap;
 
 typedef struct Pool Pool;
 
-typedef struct C89_Ast C89_Ast;
-
 typedef struct Builder Builder;
 typedef struct BuildTranslationUnit BuildTranslationUnit;
 typedef struct BuildTopLevel BuildTopLevel;
