@@ -25,21 +25,21 @@
 #include "pool.h"
 
 
-C89_TokIdentifier *build_id(Builder *b, const char *id)
+C89_AtomIdentifier *build_id(Builder *b, const char *id)
 {
     size_t i = 0;
     assert (id[i] == '_' || isalpha(id[i]));
     while (id[++i])
         assert (id[i] == '_' || isalnum(id[i]));
-    return c89_create_tok_identifier(b->pool, id);
+    return c89_create_atom_identifier(b->pool, id);
 }
-C89_TokTypedefName *build_typedef_name(Builder *b, const char *id)
+C89_AtomTypedefName *build_typedef_name(Builder *b, const char *id)
 {
     size_t i = 0;
     assert (id[i] == '_' || isalpha(id[i]));
     while (id[++i])
         assert (id[i] == '_' || isalnum(id[i]));
-    return c89_create_tok_typedef_name(b->pool, id);
+    return c89_create_atom_typedef_name(b->pool, id);
 }
 
 BuildTranslationUnit *build_tu_ast(Builder *b, C89_AnyTranslationUnit *ast)
@@ -288,7 +288,7 @@ static BuildTypePairAbstractDeclarator build_type_to_abstract_decl_step(Builder 
 }
 BuildTypePairDeclarator build_type_to_decl(Builder *b, BuildType *type, const char *name)
 {
-    C89_TokIdentifier *id = build_id(b, name);
+    C89_AtomIdentifier *id = build_id(b, name);
     C89_AnyDeclarator *decl = (C89_AnyDeclarator *)id;
     return build_type_to_decl_step(b, type, decl);
 }

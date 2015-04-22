@@ -148,13 +148,13 @@ class Grammar:
                     v.child = self.rules[v.child.visual]
 
     def add_keyword(self, ty):
-        self.rules[ty] = Term(IdentifierCase('tok-' + ty, ty))
+        self.rules[ty] = Term(IdentifierCase('kw-' + ty, ty), False)
 
     def add_atom(self, ty):
-        self.rules[ty] = Term(IdentifierCase('tok-' + ty, ty))
+        self.rules[ty] = Term(IdentifierCase('atom-' + ty, ty), True)
 
     def add_symbol(self, sym, ty):
-        self.rules[sym] = Term(IdentifierCase('tok-' + ty, sym))
+        self.rules[sym] = Term(IdentifierCase('sym-' + ty, sym), False)
 
     def add_rule(self, name, alts):
         if len(alts) == 0:
@@ -194,9 +194,10 @@ class Rule:
         return '%s(%r)' % (self.__class__.__name__, self.tag)
 
 class Term(Rule):
-    __slots__ = ('tag',)
-    def __init__(self, tag):
+    __slots__ = ('tag', 'is_atom')
+    def __init__(self, tag, is_atom):
         self.tag = tag
+        self.is_atom = is_atom
 
 class Option(Rule):
     __slots__ = ('tag', 'child')
@@ -292,7 +293,7 @@ def emit(grammar, header, source):
     c('    %(AstType)s type;')
     c('    size_t total_tokens;')
     c('    size_t num_children;')
-    c('    union { char *raw; %(Ast)s **children; };')
+    c('    union { const char *raw; %(Ast)s **children; };')
     c('};')
     c()
     c('static %(Ast)s %(nothing)s = {%(NOTHING)s, 0, 0, {""}};')
@@ -303,14 +304,16 @@ def emit(grammar, header, source):
     c('    (void)pool;')
     c('    return (%(Nothing)s *)&%(nothing)s;')
     c('}')
-    c('static %(Ast)s *%(create_terminal)s(Pool *pool, %(AstType)s type, const char *raw)')
+    c('static %(Ast)s *%(create_terminal)s(Pool *pool, %(AstType)s type, const char *raw, bool dup)')
     c('{')
     c('    %(Ast)s rv;')
     c('    memset(&rv, 0, sizeof(rv));')
     c('    rv.type = type;')
     c('    rv.total_tokens = 1;')
     c('    rv.num_children = 0;')
-    c('    rv.raw = (char *)pool_intern_string(pool, raw);')
+    c('    if (dup)')
+    c('        raw = pool_intern_string(pool, raw);')
+    c('    rv.raw = raw;')
     c('    return (%(Ast)s *)(const %(Ast)s *)pool_intern(pool, &rv, sizeof(rv));')
     c('}')
     c('static %(Ast)s *%(create_nonterminal)s(Pool *pool, %(AstType)s type, size_t nargs, %(Ast)s **args)')
@@ -332,10 +335,21 @@ def emit(grammar, header, source):
     for ast in ast_values:
         if isinstance(ast, (Term, Sequence)):
             if isinstance(ast, Term):
-                s('%s *%s(Pool *pool, const char *raw)' % ((lang + ast.tag).camel, (lang + 'create' + ast.tag).lower))
-                c('{')
-                c('    return (%s *)%%(create_terminal)s(pool, %s, raw);' % ((lang + ast.tag).camel, (lang + ast.tag).upper))
-                c('}')
+                if ast.is_atom:
+                    s('%s *%s(Pool *pool, const char *raw)' % ((lang + ast.tag).camel, (lang + 'create' + ast.tag).lower))
+                    c('{')
+                    c('    return (%s *)%%(create_terminal)s(pool, %s, raw, true);' % ((lang + ast.tag).camel, (lang + ast.tag).upper))
+                    c('}')
+                else:
+                    raw = ast.tag.visual
+                    raw = raw.replace('\\', '\\\\')
+                    raw = raw.replace('"', '\\"')
+                    raw = '"%s"' % raw
+                    raw = raw.replace('%', '%%')
+                    s('%s *%s(Pool *pool)' % ((lang + ast.tag).camel, (lang + 'create' + ast.tag).lower))
+                    c('{')
+                    c('    return (%s *)%%(create_terminal)s(pool, %s, %s, false);' % ((lang + ast.tag).camel, (lang + ast.tag).upper, raw))
+                    c('}')
             if isinstance(ast, Sequence):
                 ba = ast.bits
                 # this is needed for e.g. tree_for_statement, which has 3 opt_comma_expression and 2 tok_semicolon

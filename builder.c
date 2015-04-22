@@ -33,88 +33,88 @@ Builder *builder_create(void)
     Pool *pool = rv->pool = pool_create();
     rv->nothing = c89_create_nothing(pool);
 
-    rv->arrow = c89_create_tok_arrow(pool, "->");
-    rv->comma = c89_create_tok_comma(pool, ",");
-    rv->dot = c89_create_tok_dot(pool, ".");
-    rv->ellipsis = c89_create_tok_ellipsis(pool, "...");
-    rv->lbrace = c89_create_tok_lbrace(pool, "{");
-    rv->lbracket = c89_create_tok_lbracket(pool, "[");
-    rv->lparen = c89_create_tok_lparen(pool, "(");
-    rv->rbrace = c89_create_tok_rbrace(pool, "}");
-    rv->rbracket = c89_create_tok_rbracket(pool, "]");
-    rv->rparen = c89_create_tok_rparen(pool, ")");
-    rv->semicolon = c89_create_tok_semicolon(pool, ";");
+    rv->arrow = c89_create_sym_arrow(pool);
+    rv->comma = c89_create_sym_comma(pool);
+    rv->dot = c89_create_sym_dot(pool);
+    rv->ellipsis = c89_create_sym_ellipsis(pool);
+    rv->lbrace = c89_create_sym_lbrace(pool);
+    rv->lbracket = c89_create_sym_lbracket(pool);
+    rv->lparen = c89_create_sym_lparen(pool);
+    rv->rbrace = c89_create_sym_rbrace(pool);
+    rv->rbracket = c89_create_sym_rbracket(pool);
+    rv->rparen = c89_create_sym_rparen(pool);
+    rv->semicolon = c89_create_sym_semicolon(pool);
 
-    rv->ampersand = c89_create_tok_ampersand(pool, "&");
-    rv->bang = c89_create_tok_bang(pool, "!");
-    rv->caret = c89_create_tok_caret(pool, "^");
-    rv->colon = c89_create_tok_colon(pool, ":");
-    rv->decr = c89_create_tok_decr(pool, "--");
-    rv->eq = c89_create_tok_eq(pool, "==");
-    rv->ge = c89_create_tok_ge(pool, ">=");
-    rv->gt = c89_create_tok_gt(pool, ">");
-    rv->incr = c89_create_tok_incr(pool, "++");
-    rv->le = c89_create_tok_le(pool, "<=");
-    rv->logical_and = c89_create_tok_logical_and(pool, "&&");
-    rv->logical_or = c89_create_tok_logical_or(pool, "||");
-    rv->lshift = c89_create_tok_lshift(pool, "<<");
-    rv->lt = c89_create_tok_lt(pool, "<");
-    rv->minus = c89_create_tok_minus(pool, "-");
-    rv->ne = c89_create_tok_ne(pool, "!=");
-    rv->percent = c89_create_tok_percent(pool, "%");
-    rv->pipe = c89_create_tok_pipe(pool, "|");
-    rv->plus = c89_create_tok_plus(pool, "+");
-    rv->query = c89_create_tok_query(pool, "?");
-    rv->rshift = c89_create_tok_rshift(pool, ">>");
-    rv->slash = c89_create_tok_slash(pool, "/");
-    rv->star = c89_create_tok_star(pool, "*");
-    rv->tilde = c89_create_tok_tilde(pool, "~");
+    rv->ampersand = c89_create_sym_ampersand(pool);
+    rv->bang = c89_create_sym_bang(pool);
+    rv->caret = c89_create_sym_caret(pool);
+    rv->colon = c89_create_sym_colon(pool);
+    rv->decr = c89_create_sym_decr(pool);
+    rv->eq = c89_create_sym_eq(pool);
+    rv->ge = c89_create_sym_ge(pool);
+    rv->gt = c89_create_sym_gt(pool);
+    rv->incr = c89_create_sym_incr(pool);
+    rv->le = c89_create_sym_le(pool);
+    rv->logical_and = c89_create_sym_logical_and(pool);
+    rv->logical_or = c89_create_sym_logical_or(pool);
+    rv->lshift = c89_create_sym_lshift(pool);
+    rv->lt = c89_create_sym_lt(pool);
+    rv->minus = c89_create_sym_minus(pool);
+    rv->ne = c89_create_sym_ne(pool);
+    rv->percent = c89_create_sym_percent(pool);
+    rv->pipe = c89_create_sym_pipe(pool);
+    rv->plus = c89_create_sym_plus(pool);
+    rv->query = c89_create_sym_query(pool);
+    rv->rshift = c89_create_sym_rshift(pool);
+    rv->slash = c89_create_sym_slash(pool);
+    rv->star = c89_create_sym_star(pool);
+    rv->tilde = c89_create_sym_tilde(pool);
 
-    rv->assign = c89_create_tok_assign(pool, "=");
-    rv->ampersand_assign = c89_create_tok_ampersand_assign(pool, "&=");
-    rv->caret_assign = c89_create_tok_caret_assign(pool, "^=");
-    rv->lshift_assign = c89_create_tok_lshift_assign(pool, "<<=");
-    rv->minus_assign = c89_create_tok_minus_assign(pool, "-=");
-    rv->percent_assign = c89_create_tok_percent_assign(pool, "%=");
-    rv->pipe_assign = c89_create_tok_pipe_assign(pool, "|=");
-    rv->plus_assign = c89_create_tok_plus_assign(pool, "+=");
-    rv->rshift_assign = c89_create_tok_rshift_assign(pool, ">>=");
-    rv->slash_assign = c89_create_tok_slash_assign(pool, "/=");
-    rv->star_assign = c89_create_tok_star_assign(pool, "*=");
+    rv->assign = c89_create_sym_assign(pool);
+    rv->ampersand_assign = c89_create_sym_ampersand_assign(pool);
+    rv->caret_assign = c89_create_sym_caret_assign(pool);
+    rv->lshift_assign = c89_create_sym_lshift_assign(pool);
+    rv->minus_assign = c89_create_sym_minus_assign(pool);
+    rv->percent_assign = c89_create_sym_percent_assign(pool);
+    rv->pipe_assign = c89_create_sym_pipe_assign(pool);
+    rv->plus_assign = c89_create_sym_plus_assign(pool);
+    rv->rshift_assign = c89_create_sym_rshift_assign(pool);
+    rv->slash_assign = c89_create_sym_slash_assign(pool);
+    rv->star_assign = c89_create_sym_star_assign(pool);
 
-    rv->kw_break = c89_create_tok_break(pool, "break");
-    rv->kw_case = c89_create_tok_case(pool, "case");
-    rv->kw_const = c89_create_tok_const(pool, "const");
-    rv->kw_continue = c89_create_tok_continue(pool, "continue");
-    rv->kw_default = c89_create_tok_default(pool, "default");
-    rv->kw_do = c89_create_tok_do(pool, "do");
-    rv->kw_else = c89_create_tok_else(pool, "else");
-    rv->kw_enum = c89_create_tok_enum(pool, "enum");
-    rv->kw_extern = c89_create_tok_extern(pool, "extern");
-    rv->kw_for = c89_create_tok_for(pool, "for");
-    rv->kw_goto = c89_create_tok_goto(pool, "goto");
-    rv->kw_if = c89_create_tok_if(pool, "if");
-    rv->kw_register = c89_create_tok_register(pool, "register");
-    rv->kw_return = c89_create_tok_return(pool, "return");
-    rv->kw_sizeof = c89_create_tok_sizeof(pool, "sizeof");
-    rv->kw_static = c89_create_tok_static(pool, "static");
-    rv->kw_struct = c89_create_tok_struct(pool, "struct");
-    rv->kw_switch = c89_create_tok_switch(pool, "switch");
-    rv->kw_typedef = c89_create_tok_typedef(pool, "typedef");
-    rv->kw_union = c89_create_tok_union(pool, "union");
-    rv->kw_volatile = c89_create_tok_volatile(pool, "volatile");
-    rv->kw_while = c89_create_tok_while(pool, "while");
+    rv->kw_break = c89_create_kw_break(pool);
+    rv->kw_case = c89_create_kw_case(pool);
+    rv->kw_const = c89_create_kw_const(pool);
+    rv->kw_continue = c89_create_kw_continue(pool);
+    rv->kw_default = c89_create_kw_default(pool);
+    rv->kw_do = c89_create_kw_do(pool);
+    rv->kw_else = c89_create_kw_else(pool);
+    rv->kw_enum = c89_create_kw_enum(pool);
+    rv->kw_extern = c89_create_kw_extern(pool);
+    rv->kw_for = c89_create_kw_for(pool);
+    rv->kw_goto = c89_create_kw_goto(pool);
+    rv->kw_if = c89_create_kw_if(pool);
+    rv->kw_register = c89_create_kw_register(pool);
+    rv->kw_return = c89_create_kw_return(pool);
+    rv->kw_sizeof = c89_create_kw_sizeof(pool);
+    rv->kw_static = c89_create_kw_static(pool);
+    rv->kw_struct = c89_create_kw_struct(pool);
+    rv->kw_switch = c89_create_kw_switch(pool);
+    rv->kw_typedef = c89_create_kw_typedef(pool);
+    rv->kw_union = c89_create_kw_union(pool);
+    rv->kw_volatile = c89_create_kw_volatile(pool);
+    rv->kw_while = c89_create_kw_while(pool);
 
     {
-        C89_TokSigned *kw_signed = c89_create_tok_signed(pool, "signed");
-        C89_TokUnsigned *kw_unsigned = c89_create_tok_unsigned(pool, "unsigned");
-        C89_TokVoid *kw_void = c89_create_tok_void(pool, "void");
-        C89_TokChar *kw_char = c89_create_tok_char(pool, "char");
-        C89_TokShort *kw_short = c89_create_tok_short(pool, "short");
-        C89_TokInt *kw_int = c89_create_tok_int(pool, "int");
-        C89_TokLong *kw_long = c89_create_tok_long(pool, "long");
-        C89_TokFloat *kw_float = c89_create_tok_float(pool, "float");
-        C89_TokDouble *kw_double = c89_create_tok_double(pool, "double");
+        C89_KwSigned *kw_signed = c89_create_kw_signed(pool);
+        C89_KwUnsigned *kw_unsigned = c89_create_kw_unsigned(pool);
+        C89_KwVoid *kw_void = c89_create_kw_void(pool);
+        C89_KwChar *kw_char = c89_create_kw_char(pool);
+        C89_KwShort *kw_short = c89_create_kw_short(pool);
+        C89_KwInt *kw_int = c89_create_kw_int(pool);
+        C89_KwLong *kw_long = c89_create_kw_long(pool);
+        C89_KwFloat *kw_float = c89_create_kw_float(pool);
+        C89_KwDouble *kw_double = c89_create_kw_double(pool);
 
         rv->ty_void = (C89_AnyTypeSpecifier *)kw_void;
         rv->ty_char = (C89_AnyTypeSpecifier *)kw_char;
@@ -367,13 +367,13 @@ BuildMemberDeclaration *build_member_declaration_bitfield_anon(Builder *b, Build
 }
 BuildEnumerator *build_enumerator_noinit(Builder *b, const char *name)
 {
-    C89_TokIdentifier *id = build_id(b, name);
+    C89_AtomIdentifier *id = build_id(b, name);
     C89_AnyEnumerator *e = (C89_AnyEnumerator *)id;
     return build_enum_ast(b, e);
 }
 BuildEnumerator *build_enumerator_init(Builder *b, const char *name, BuildExpression *init)
 {
-    C89_TokIdentifier *id = build_id(b, name);
+    C89_AtomIdentifier *id = build_id(b, name);
     C89_AnyConditionalExpression *expr = build_expr_to_conditional(b, init);
     C89_TreeInitializedEnumerationConstant *iec = c89_create_tree_initialized_enumeration_constant(b->pool, id, b->assign, expr);
     C89_AnyEnumerator *e = (C89_AnyEnumerator *)iec;
@@ -382,13 +382,13 @@ BuildEnumerator *build_enumerator_init(Builder *b, const char *name, BuildExpres
 
 BuildType *build_type_typedef(Builder *b, const char *name)
 {
-    C89_TokTypedefName *ty = build_typedef_name(b, name);
+    C89_AtomTypedefName *ty = build_typedef_name(b, name);
     C89_AnyTypeSpecifier *spec = (C89_AnyTypeSpecifier *)ty;
     return build_type_spec_ast(b, spec, false, false);
 }
 BuildType *build_type_struct(Builder *b, const char *name)
 {
-    C89_TokIdentifier *id = build_id(b, name);
+    C89_AtomIdentifier *id = build_id(b, name);
     C89_AnyStructOrUnion *sou = (C89_AnyStructOrUnion *)b->kw_struct;
     C89_TreeForwardStruct *ty = c89_create_tree_forward_struct(b->pool, sou, id);
     C89_AnyTypeSpecifier *spec = (C89_AnyTypeSpecifier *)ty;
@@ -396,7 +396,7 @@ BuildType *build_type_struct(Builder *b, const char *name)
 }
 BuildType *build_type_union(Builder *b, const char *name)
 {
-    C89_TokIdentifier *id = build_id(b, name);
+    C89_AtomIdentifier *id = build_id(b, name);
     C89_AnyStructOrUnion *sou = (C89_AnyStructOrUnion *)b->kw_union;
     C89_TreeForwardStruct *ty = c89_create_tree_forward_struct(b->pool, sou, id);
     C89_AnyTypeSpecifier *spec = (C89_AnyTypeSpecifier *)ty;
@@ -404,7 +404,7 @@ BuildType *build_type_union(Builder *b, const char *name)
 }
 BuildType *build_type_enum(Builder *b, const char *name)
 {
-    C89_TokIdentifier *id = build_id(b, name);
+    C89_AtomIdentifier *id = build_id(b, name);
     C89_TreeForwardEnum *ty = c89_create_tree_forward_enum(b->pool, b->kw_enum, id);
     C89_AnyTypeSpecifier *spec = (C89_AnyTypeSpecifier *)ty;
     return build_type_spec_ast(b, spec, false, false);
@@ -580,7 +580,7 @@ BuildStatement *build_stmt_expr(Builder *b, BuildExpression *expr)
 }
 BuildStatement *build_stmt_label(Builder *b, const char *label, BuildStatement *target)
 {
-    C89_TokIdentifier *id = build_id(b, label);
+    C89_AtomIdentifier *id = build_id(b, label);
     C89_TreeLabelStatement *stmt = c89_create_tree_label_statement(b->pool, id, b->colon, target->ast_stmt);
     C89_AnyStatement *ast = (C89_AnyStatement *)stmt;
     return build_stmt_ast(b, ast);
@@ -716,7 +716,7 @@ BuildStatement *build_stmt_for(Builder *b, BuildExpression *init, BuildExpressio
 }
 BuildStatement *build_stmt_goto(Builder *b, const char *label)
 {
-    C89_TokIdentifier *id = build_id(b, label);
+    C89_AtomIdentifier *id = build_id(b, label);
     C89_TreeGotoStatement *stmt = c89_create_tree_goto_statement(b->pool, b->kw_goto, id, b->semicolon);
     C89_AnyStatement *ast = (C89_AnyStatement *)stmt;
     return build_stmt_ast(b, ast);
@@ -795,7 +795,7 @@ BuildExpression *build_expr_parenthesize(Builder *b, BuildExpression *expr)
 }
 BuildExpression *build_expr_id(Builder *b, const char *id)
 {
-    C89_TokIdentifier *i = build_id(b, id);
+    C89_AtomIdentifier *i = build_id(b, id);
     return build_expr_from_primary(b, (C89_AnyPrimaryExpression *)i);
 }
 
@@ -810,7 +810,7 @@ BuildExpression *build_expr_multi_char(Builder *b, const char *c)
 BuildExpression *build_expr_multi_char_slice(Builder *b, const char *c, size_t l)
 {
     const char *q = pool_single_quote(b->pool, c, l);
-    C89_TokCharacterConstant *p = c89_create_tok_character_constant(b->pool, q);
+    C89_AtomCharacterConstant *p = c89_create_atom_character_constant(b->pool, q);
     return build_expr_from_primary(b, (C89_AnyPrimaryExpression *)p);
 }
 BuildExpression *build_expr_string(Builder *b, const char *s)
@@ -820,56 +820,56 @@ BuildExpression *build_expr_string(Builder *b, const char *s)
 BuildExpression *build_expr_string_slice(Builder *b, const char *s, size_t l)
 {
     const char *q = pool_double_quote(b->pool, s, l);
-    C89_TokStringLiteral *p = c89_create_tok_string_literal(b->pool, q);
+    C89_AtomStringLiteral *p = c89_create_atom_string_literal(b->pool, q);
     return build_expr_from_primary(b, (C89_AnyPrimaryExpression *)p);
 }
 BuildExpression *build_expr_int(Builder *b, uintmax_t i)
 {
     char buf[20 + 1];
     int rv;
-    C89_TokDecimalConstant *p;
+    C89_AtomDecimalConstant *p;
     if (i == 0)
         return build_expr_int_oct(b, i, 0);
     rv = sprintf(buf, "%ju", i);
     assert (rv >= 0 && (size_t)rv < sizeof(buf));
-    p = c89_create_tok_decimal_constant(b->pool, buf);
+    p = c89_create_atom_decimal_constant(b->pool, buf);
     return build_expr_from_primary(b, (C89_AnyPrimaryExpression *)p);
 }
 BuildExpression *build_expr_int_oct(Builder *b, uintmax_t i, unsigned min_len)
 {
     char buf[1 + 22 + 1];
     int rv;
-    C89_TokOctalConstant *p;
+    C89_AtomOctalConstant *p;
     if (min_len > 22)
         min_len = 22;
     rv = sprintf(buf, "%0#*jo", min_len + 1, i);
     assert (rv >= 0 && (size_t)rv < sizeof(buf));
-    p = c89_create_tok_octal_constant(b->pool, buf);
+    p = c89_create_atom_octal_constant(b->pool, buf);
     return build_expr_from_primary(b, (C89_AnyPrimaryExpression *)p);
 }
 BuildExpression *build_expr_int_hex(Builder *b, uintmax_t i, unsigned min_len)
 {
     char buf[2 + 16 + 1];
     int rv;
-    C89_TokHexadecimalConstant *p;
+    C89_AtomHexadecimalConstant *p;
     if (min_len > 16)
         min_len = 16;
     rv = sprintf(buf, "%0#*jx", min_len + 2, i);
     assert (rv >= 0 && (size_t)rv < sizeof(buf));
-    p = c89_create_tok_hexadecimal_constant(b->pool, buf);
+    p = c89_create_atom_hexadecimal_constant(b->pool, buf);
     return build_expr_from_primary(b, (C89_AnyPrimaryExpression *)p);
 }
 BuildExpression *build_expr_float(Builder *b, long double f)
 {
     char buf[1 + 1 + 20 + 1 + 1 + 4 + 1];
     int rv;
-    C89_TokFloatingConstant *p;
+    C89_AtomFloatingConstant *p;
     long double f2;
     rv = sprintf(buf, "%.21Le", f);
     assert (rv >= 0 && (size_t)rv < sizeof(buf));
     rv = sscanf(buf, "%Lf", &f2);
     assert (rv == 1 && f == f2);
-    p = c89_create_tok_floating_constant(b->pool, buf);
+    p = c89_create_atom_floating_constant(b->pool, buf);
     return build_expr_from_primary(b, (C89_AnyPrimaryExpression *)p);
 }
 
@@ -907,14 +907,14 @@ BuildExpression *build_expr_call(Builder *b, BuildExpression *fun, size_t nargs,
 BuildExpression *build_expr_direct_member(Builder *b, BuildExpression *obj, const char *field)
 {
     C89_AnyPostfixExpression *o = build_expr_to_postfix(b, obj);
-    C89_TokIdentifier *f = build_id(b, field);
+    C89_AtomIdentifier *f = build_id(b, field);
     C89_TreeDotExpression *x = c89_create_tree_dot_expression(b->pool, o, b->dot, f);
     return build_expr_from_postfix(b, (C89_AnyPostfixExpression *)x);
 }
 BuildExpression *build_expr_indirect_member(Builder *b, BuildExpression *ptr, const char *field)
 {
     C89_AnyPostfixExpression *p = build_expr_to_postfix(b, ptr);
-    C89_TokIdentifier *f = build_id(b, field);
+    C89_AtomIdentifier *f = build_id(b, field);
     C89_TreeArrowExpression *x = c89_create_tree_arrow_expression(b->pool, p, b->arrow, f);
     return build_expr_from_postfix(b, (C89_AnyPostfixExpression *)x);
 }

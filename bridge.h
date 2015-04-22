@@ -27,80 +27,80 @@ struct Builder
     C89_Nothing *nothing;
 
     /* grouping */
-    C89_TokArrow *arrow;
-    C89_TokComma *comma;
-    C89_TokDot *dot;
-    C89_TokEllipsis *ellipsis;
-    C89_TokLbrace *lbrace;
-    C89_TokLbracket *lbracket;
-    C89_TokLparen *lparen;
-    C89_TokRbrace *rbrace;
-    C89_TokRbracket *rbracket;
-    C89_TokRparen *rparen;
-    C89_TokSemicolon *semicolon;
+    C89_SymArrow *arrow;
+    C89_SymComma *comma;
+    C89_SymDot *dot;
+    C89_SymEllipsis *ellipsis;
+    C89_SymLbrace *lbrace;
+    C89_SymLbracket *lbracket;
+    C89_SymLparen *lparen;
+    C89_SymRbrace *rbrace;
+    C89_SymRbracket *rbracket;
+    C89_SymRparen *rparen;
+    C89_SymSemicolon *semicolon;
 
     /* operators */
-    C89_TokAmpersand *ampersand;
-    C89_TokBang *bang;
-    C89_TokCaret *caret;
-    C89_TokColon *colon;
-    C89_TokDecr *decr;
-    C89_TokEq *eq;
-    C89_TokGe *ge;
-    C89_TokGt *gt;
-    C89_TokIncr *incr;
-    C89_TokLe *le;
-    C89_TokLogicalAnd *logical_and;
-    C89_TokLogicalOr *logical_or;
-    C89_TokLshift *lshift;
-    C89_TokLt *lt;
-    C89_TokMinus *minus;
-    C89_TokNe *ne;
-    C89_TokPercent *percent;
-    C89_TokPipe *pipe;
-    C89_TokPlus *plus;
-    C89_TokQuery *query;
-    C89_TokRshift *rshift;
-    C89_TokSlash *slash;
-    C89_TokStar *star;
-    C89_TokTilde *tilde;
+    C89_SymAmpersand *ampersand;
+    C89_SymBang *bang;
+    C89_SymCaret *caret;
+    C89_SymColon *colon;
+    C89_SymDecr *decr;
+    C89_SymEq *eq;
+    C89_SymGe *ge;
+    C89_SymGt *gt;
+    C89_SymIncr *incr;
+    C89_SymLe *le;
+    C89_SymLogicalAnd *logical_and;
+    C89_SymLogicalOr *logical_or;
+    C89_SymLshift *lshift;
+    C89_SymLt *lt;
+    C89_SymMinus *minus;
+    C89_SymNe *ne;
+    C89_SymPercent *percent;
+    C89_SymPipe *pipe;
+    C89_SymPlus *plus;
+    C89_SymQuery *query;
+    C89_SymRshift *rshift;
+    C89_SymSlash *slash;
+    C89_SymStar *star;
+    C89_SymTilde *tilde;
 
     /* assignment operators */
-    C89_TokAssign *assign;
-    C89_TokAmpersandAssign *ampersand_assign;
-    C89_TokCaretAssign *caret_assign;
-    C89_TokLshiftAssign *lshift_assign;
-    C89_TokMinusAssign *minus_assign;
-    C89_TokPercentAssign *percent_assign;
-    C89_TokPipeAssign *pipe_assign;
-    C89_TokPlusAssign *plus_assign;
-    C89_TokRshiftAssign *rshift_assign;
-    C89_TokSlashAssign *slash_assign;
-    C89_TokStarAssign *star_assign;
+    C89_SymAssign *assign;
+    C89_SymAmpersandAssign *ampersand_assign;
+    C89_SymCaretAssign *caret_assign;
+    C89_SymLshiftAssign *lshift_assign;
+    C89_SymMinusAssign *minus_assign;
+    C89_SymPercentAssign *percent_assign;
+    C89_SymPipeAssign *pipe_assign;
+    C89_SymPlusAssign *plus_assign;
+    C89_SymRshiftAssign *rshift_assign;
+    C89_SymSlashAssign *slash_assign;
+    C89_SymStarAssign *star_assign;
 
     /* keywords */
-    C89_TokBreak *kw_break;
-    C89_TokCase *kw_case;
-    C89_TokConst *kw_const;
-    C89_TokContinue *kw_continue;
-    C89_TokDefault *kw_default;
-    C89_TokDo *kw_do;
-    C89_TokElse *kw_else;
-    C89_TokEnum *kw_enum;
-    C89_TokExtern *kw_extern;
-    C89_TokFor *kw_for;
-    C89_TokGoto *kw_goto;
-    C89_TokIf *kw_if;
-    C89_TokRegister *kw_register;
-    C89_TokReturn *kw_return;
-    C89_TokSizeof *kw_sizeof;
-    C89_TokStatic *kw_static;
-    C89_TokStruct *kw_struct;
-    C89_TokSwitch *kw_switch;
-    C89_TokTypedef *kw_typedef;
-    C89_TokUnion *kw_union;
-    C89_TokVolatile *kw_volatile;
-    C89_TokWhile *kw_while;
+    C89_KwBreak *kw_break;
+    C89_KwCase *kw_case;
+    C89_KwConst *kw_const;
+    C89_KwContinue *kw_continue;
+    C89_KwDefault *kw_default;
+    C89_KwDo *kw_do;
+    C89_KwElse *kw_else;
+    C89_KwEnum *kw_enum;
+    C89_KwExtern *kw_extern;
+    C89_KwFor *kw_for;
+    C89_KwGoto *kw_goto;
+    C89_KwIf *kw_if;
+    C89_KwRegister *kw_register;
+    C89_KwReturn *kw_return;
+    C89_KwSizeof *kw_sizeof;
+    C89_KwStatic *kw_static;
+    C89_KwStruct *kw_struct;
+    C89_KwSwitch *kw_switch;
+    C89_KwTypedef *kw_typedef;
+    C89_KwUnion *kw_union;
+    C89_KwVolatile *kw_volatile;
+    C89_KwWhile *kw_while;
 
     /* types */
     C89_AnyTypeSpecifier *ty_void;
@@ -216,8 +216,8 @@ struct BuildTypePairAbstractDeclarator
 
 
 /* build helpers */
-C89_TokIdentifier *build_id(Builder *b, const char *id);
-C89_TokTypedefName *build_typedef_name(Builder *b, const char *id);
+C89_AtomIdentifier *build_id(Builder *b, const char *id);
+C89_AtomTypedefName *build_typedef_name(Builder *b, const char *id);
 
 
 /* raw builders */
