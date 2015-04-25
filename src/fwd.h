@@ -25,6 +25,7 @@ typedef struct HashEntry HashEntry;
 typedef struct HashMap HashMap;
 
 typedef struct Pool Pool;
+typedef void *(*PoolTransform)(Pool *pool, const void *str, size_t len);
 
 typedef struct Builder Builder;
 typedef struct BuildTranslationUnit BuildTranslationUnit;

@@ -799,6 +799,116 @@ BuildExpression *build_expr_id(Builder *b, const char *id)
     return build_expr_from_primary(b, (C89_AnyPrimaryExpression *)i);
 }
 
+
+static char *really_do_quote(const char *s, size_t l, char q)
+{
+    size_t a = 3 + l;
+    size_t i;
+    char *m;
+    char *p;
+    for (i = 0; i < l; ++i)
+    {
+        unsigned char c = s[i];
+        switch (c)
+        {
+        case '\a':
+        case '\b':
+        case '\f':
+        case '\n':
+        case '\r':
+        case '\t':
+        case '\v':
+            a++;
+            continue;
+        }
+        if (c == q || c == '\\')
+            a++;
+        else if (c < 0x20 || c >= 0x7f)
+            a += 3;
+
+    }
+    p = m = (char *)malloc(a);
+    *p++ = q;
+    for (i = 0; i < l; ++i)
+    {
+        unsigned char c = s[i];
+        switch (c)
+        {
+        case '\a':
+            *p++ = '\\';
+            *p++ = 'a';
+            continue;
+        case '\b':
+            *p++ = '\\';
+            *p++ = 'b';
+            continue;
+        case '\f':
+            *p++ = '\\';
+            *p++ = 'f';
+            continue;
+        case '\n':
+            *p++ = '\\';
+            *p++ = 'n';
+            continue;
+        case '\r':
+            *p++ = '\\';
+            *p++ = 'r';
+            continue;
+        case '\t':
+            *p++ = '\\';
+            *p++ = 't';
+            continue;
+        case '\v':
+            *p++ = '\\';
+            *p++ = 'v';
+            continue;
+        }
+        if (c == q || c == '\\')
+        {
+            *p++ = '\\';
+            *p++ = c;
+            continue;
+        }
+        if (c < 0x20 || c >= 0x7f)
+        {
+            /* octal because \x is not limited to 2 digits */
+            *p++ = '\\';
+            *p++ = '0' + ((c >> 6) & 3);
+            *p++ = '0' + ((c >> 3) & 7);
+            *p++ = '0' + ((c >> 0) & 7);
+            continue;
+        }
+        *p++ = c;
+    }
+    *p++ = q;
+    *p = '\0';
+    return m;
+}
+
+static void *transform_single_quote(Pool *pool, const void *str, size_t len)
+{
+    void *rv = really_do_quote((const char *)str, len, '\'');
+    pool_free(pool, rv);
+    return rv;
+}
+static void *transform_double_quote(Pool *pool, const void *str, size_t len)
+{
+    void *rv = really_do_quote((const char *)str, len, '"');
+    pool_free(pool, rv);
+    return rv;
+}
+
+static const char *pool_single_quote(Pool *pool, const char *str, size_t len)
+{
+    return (const char *)pool_intern_map(pool, transform_single_quote, str, len);
+}
+
+static const char *pool_double_quote(Pool *pool, const char *str, size_t len)
+{
+    return (const char *)pool_intern_map(pool, transform_double_quote, str, len);
+}
+
+
 BuildExpression *build_expr_char(Builder *b, char c)
 {
     return build_expr_multi_char_slice(b, &c, 1);
