@@ -888,13 +888,13 @@ static char *really_do_quote(const char *s, size_t l, char q)
 static void *transform_single_quote(Pool *pool, const void *str, size_t len)
 {
     void *rv = really_do_quote((const char *)str, len, '\'');
-    pool_free(pool, rv);
+    pool_free(pool, free, rv);
     return rv;
 }
 static void *transform_double_quote(Pool *pool, const void *str, size_t len)
 {
     void *rv = really_do_quote((const char *)str, len, '"');
-    pool_free(pool, rv);
+    pool_free(pool, free, rv);
     return rv;
 }
 

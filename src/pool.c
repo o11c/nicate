@@ -23,12 +23,24 @@
 
 #include "hashmap.h"
 
+/*
+    TODO group by free_func, it's probably a huge win.
+
+    Probably requires adding iterators to hashmap, which requires adding
+    a linked-list field for order-of-insertion (to preserve determinism).
+ */
+typedef struct FreeEntry FreeEntry;
+struct FreeEntry
+{
+    void (*free_func)(void *ptr);
+    void *ptr;
+};
 
 struct Pool
 {
     HashMap *interns;
     HashMap *transforms;
-    void **free_list;
+    FreeEntry *free_list;
     size_t free_size;
     size_t free_cap;
 };
@@ -38,9 +50,9 @@ Pool *pool_create(void)
     Pool *rv = (Pool *)calloc(1, sizeof(Pool));
     rv->interns = map_create();
     rv->transforms = map_create();
-    rv->free_list = (void **)calloc(16, sizeof(void *));
     rv->free_size = 0;
     rv->free_cap = 16;
+    rv->free_list = (FreeEntry *)calloc(rv->free_cap, sizeof(*rv->free_list));
     return rv;
 }
 
@@ -49,7 +61,8 @@ void pool_destroy(Pool *pool)
     size_t i = pool->free_size;
     while (i-- > 0)
     {
-        free(pool->free_list[i]);
+        FreeEntry *fli = &pool->free_list[i];
+        fli->free_func(fli->ptr);
     }
     free(pool->free_list);
     map_destroy(pool->transforms);
@@ -57,14 +70,15 @@ void pool_destroy(Pool *pool)
     free(pool);
 }
 
-void pool_free(Pool *pool, void *ptr)
+void pool_free(Pool *pool, void (*free_func)(void *ptr), void *ptr)
 {
+    FreeEntry entry = {free_func, ptr};
     if (pool->free_size == pool->free_cap)
     {
         pool->free_cap *= 2;
-        pool->free_list = (void **)realloc(pool->free_list, pool->free_cap * sizeof(void *));
+        pool->free_list = (FreeEntry *)realloc(pool->free_list, pool->free_cap * sizeof(*pool->free_list));
     }
-    pool->free_list[pool->free_size++] = ptr;
+    pool->free_list[pool->free_size++] = entry;
 }
 
 const void *pool_intern(Pool *pool, const void *str, size_t len)

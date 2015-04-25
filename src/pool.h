@@ -25,7 +25,7 @@
 
 Pool *pool_create(void);
 void pool_destroy(Pool *pool);
-void pool_free(Pool *pool, void *ptr);
+void pool_free(Pool *pool, void (*free_func)(void *), void *ptr);
 const void *pool_intern(Pool *pool, const void *str, size_t len);
 const char *pool_intern_string(Pool *pool, const char *str);
 const void *pool_intern_map(Pool *pool, PoolTransform transform, const void *str, size_t len);
