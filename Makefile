@@ -25,6 +25,8 @@ WARNINGS = -Werror -Wall -Wextra -Wformat -Wunused -Wc++-compat -Wmissing-declar
 
 LIB_OBJECTS = builder.o bridge.o c89.gen.o pool.o hashmap.o PMurHash.o
 
+MKDIR_FIRST = @mkdir -p ${@D}
+
 ############################################################
 #        No user servicable parts beyond this point.       #
 ############################################################
@@ -32,6 +34,7 @@ LIB_OBJECTS = builder.o bridge.o c89.gen.o pool.o hashmap.o PMurHash.o
 override CFLAGS += -std=c89 -D_POSIX_C_SOURCE=200809L
 override CFLAGS += -MMD -MP
 override CFLAGS += -fPIC
+override CPPFLAGS += -I src/ -I gen/
 
 export LD_LIBRARY_PATH:=.:${LD_LIBRARY_PATH}
 
@@ -39,34 +42,43 @@ export LD_LIBRARY_PATH:=.:${LD_LIBRARY_PATH}
 .SECONDARY:
 .DELETE_ON_ERROR:
 
-default: hello.gen.run hello2.gen.run gnu-c.gen.o
+default: hello.gen.run hello2.gen.run obj/gnu-c.gen.o
 test: default
 	./test_nicate.py
 
-hello.x: hello.o libnicate.so
-libnicate.so: ${LIB_OBJECTS}
+bin/hello.x: obj/hello.o lib/libnicate.so
+lib/libnicate.so: $(addprefix obj/,${LIB_OBJECTS})
 # force order
-bridge.o builder.o: c89.gen.h
-hello2.gen.c: libnicate.so nicate.py
+obj/bridge.o obj/builder.o: gen/c89.gen.h
+gen/hello2.gen.c: lib/libnicate.so nicate.py
 
-lib%.so: %.o
+lib/lib%.so: obj/%.o
+	$(MKDIR_FIRST)
 	${CC} -shared ${LDFLAGS} $^ ${LDLIBS} -o $@
-%.x: %.o
+bin/%.x: obj/%.o
+	$(MKDIR_FIRST)
 	${CC} ${LDFLAGS} $^ ${LDLIBS} -o $@
-%.o: %.c
+obj/%.o: src/%.c
+	$(MKDIR_FIRST)
 	${CC} ${CPPFLAGS} ${CFLAGS} -c -o $@ $<
-%.gen.c %.gen.h: %.gram grammar.py
-	./grammar.py $<
-%.gen.c: %.py
-	./$<
-%.gen.c: %.x
+obj/%.o: gen/%.c
+	$(MKDIR_FIRST)
+	${CC} ${CPPFLAGS} ${CFLAGS} -c -o $@ $<
+gen/%.gen.c gen/%.gen.h: gram/%.gram grammar.py
+	$(MKDIR_FIRST)
+	./grammar.py $< gen/$*.gen.c gen/$*.gen.h
+gen/%.gen.c: %.py
+	$(MKDIR_FIRST)
 	./$< > $@
-%.run: %.x
+gen/%.gen.c: bin/%.x
+	$(MKDIR_FIRST)
+	./$< > $@
+%.run: bin/%.x
 	./$<
 
 clean:
-	rm -f *.x *.o *.d *.so
+	rm -rf bin/ obj/ lib/
 distclean: clean
-	rm -f *.gen.*
+	rm -rf gen/
 
--include *.d
+-include obj/*.d

@@ -5,16 +5,16 @@ def load():
     assert sys.version_info[0] >= 3
     ffi = cffi.FFI()
     ffi.cdef('typedef uint64_t uintmax_t;')
-    with open('fwd.h') as f:
+    with open('src/fwd.h') as f:
         x = [l for l in f if not l.startswith('#')]
         ffi.cdef('\n'.join(x))
-    with open('builder.h') as f:
+    with open('src/builder.h') as f:
         x = [l for l in f if not l.startswith('#')]
         ffi.cdef('\n'.join(x))
     return ffi
 
 nicate_ffi = load()
-nicate_library = nicate_ffi.dlopen('./libnicate.so')
+nicate_library = nicate_ffi.dlopen('lib/libnicate.so')
 
 class Builder:
     __slots__ = ('_c_builder',)

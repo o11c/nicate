@@ -1,7 +1,7 @@
 # trivial file, no copyright
-*.so
-*.o
-*.x
-*.d
-*.gen.*
+lib/*.so
+obj/*.o
+bin/*.x
+obj/*.d
+gen/*.gen.*
 /__pycache__/

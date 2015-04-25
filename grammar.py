@@ -89,9 +89,10 @@ class IdentifierCase:
         return IdentifierCase('%s-%s' % (other_dash, self_dash), '%s-%s' % (other_visual, self_visual))
 
 class Grammar:
-    __slots__ = ('language', 'rules')
+    __slots__ = ('filename', 'language', 'rules')
 
-    def __init__(self, src):
+    def __init__(self, filename, src):
+        self.filename = filename
         self.language = None
         self.rules = {}
 
@@ -288,6 +289,7 @@ def emit(grammar, header, source):
     lang = grammar.language
     nothing = lang + 'nothing'
 
+    f.input_filename = grammar.filename
     f.dash = lang.dash
     f.upper = lang.upper
     f.Ast = (lang + 'ast').camel
@@ -303,11 +305,11 @@ def emit(grammar, header, source):
     f.emit_impl = (lang + 'emit-impl').lower
     f.emit = (lang + 'emit').lower
 
-    h('/* Generated file, edit %(dash)s.gram instead. */')
+    h('/* Generated file, edit %(input_filename)s instead. */')
     h('#pragma once')
     h(generated_copyright)
     h()
-    c('/* Generated file, edit %(dash)s.gram instead. */')
+    c('/* Generated file, edit %(input_filename)s instead. */')
     c('#include "%(dash)s.gen.h"')
     c(generated_copyright)
     c()
@@ -527,16 +529,17 @@ def emit(grammar, header, source):
     c('}')
 
 def main(args=None):
+    import os.path
     if args is None:
         import sys
         args = sys.argv[1:]
-    if len(args) != 1:
+    if len(args) != 3:
         print('Usage: ./gram.py foo.gram')
     with open(args[0]) as f:
-        g = Grammar(f)
-    assert args[0] == '%s.gram' % g.language.dash, args[0]
-    hname = '%s.gen.h' % g.language.dash
-    cname = '%s.gen.c' % g.language.dash
+        g = Grammar(args[0], f)
+    assert os.path.basename(args[0]) == '%s.gram' % g.language.dash, args[0]
+    hname = args[2]
+    cname = args[1]
     with open(hname, 'w') as h, open(cname, 'w') as c:
         emit(g, h, c)
 
