@@ -1,0 +1,731 @@
+# Complete grammar for GNU C.
+#
+# See comments in gcc/c/c-parser.c in GCC source.
+#
+# It includes C11 and GNU extensions, but not ObjC, OMP or Cilk.
+#
+# Does not have unified comments or preprocessor directives.
+#
+# Slightly modified:
+#   - To fix bugs in GCC's comments' grammar.
+#   - To eliminate non-top-level rules that can be empty.
+#   - To put some of the rules in a more useful form.
+#   - To remove nasty cases that no reasonable code should use.
+#
+# This grammar is not used directly by nicate, it is more of a reference.
+
+language gnu-c
+
+keyword auto
+keyword break
+keyword case
+keyword const
+keyword continue
+keyword default
+keyword do
+keyword else
+keyword enum
+keyword extern
+keyword for
+keyword goto
+keyword if
+keyword register
+keyword return
+keyword sizeof
+keyword static
+keyword struct
+keyword switch
+keyword typedef
+keyword union
+keyword volatile
+keyword while
+
+keyword char
+keyword double
+keyword float
+keyword int
+keyword long
+keyword short
+keyword signed
+keyword unsigned
+keyword void
+
+keyword inline
+keyword restrict
+keyword _Static_assert
+keyword _Thread_local
+keyword _Noreturn
+keyword _Bool
+keyword _Complex
+keyword _Atomic
+keyword _Alignas
+keyword asm
+keyword _Generic
+
+keyword __extension__
+keyword __thread
+keyword __auto_type
+#keyword __intN 0-3
+keyword _Decimal32
+keyword _Decimal64
+keyword _Decimal128
+keyword _Fract
+keyword _Accum
+keyword _Sat
+keyword typeof
+keyword __attribute__
+keyword __label__
+keyword __alignof__
+keyword __real__
+keyword __imag__
+keyword __func__
+keyword __FUNCTION__
+keyword __PRETTY_FUNCTION__
+keyword __builtin_va_arg
+keyword __builtin_offsetof
+keyword __builtin_choose_expr
+keyword __builtin_types_compatible_p
+keyword __builtin_complex
+keyword __builtin_shuffle
+
+atom identifier
+atom typedef-name
+atom address-space
+
+atom floating-constant
+atom decimal-constant
+atom octal-constant
+atom hexadecimal-constant
+atom character-constant
+atom string-literal
+
+symbol [ lbracket
+symbol ] rbracket
+symbol ( lparen
+symbol ) rparen
+symbol { lbrace
+symbol } rbrace
+symbol . dot
+symbol ... ellipsis
+symbol -> arrow
+symbol ++ incr
+symbol -- decr
+symbol & ampersand
+symbol * star
+symbol + plus
+symbol - minus
+symbol ~ tilde
+symbol ! bang
+symbol / slash
+symbol % percent
+symbol << lshift
+symbol >> rshift
+symbol < lt
+symbol > gt
+symbol <= le
+symbol >= ge
+symbol == eq
+symbol != ne
+symbol ^ caret
+symbol | pipe
+symbol && logical-and
+symbol || logical-or
+symbol ? query
+symbol : colon
+symbol = assign
+symbol *= star-assign
+symbol /= slash-assign
+symbol %= percent-assign
+symbol += plus-assign
+symbol -= minus-assign
+symbol <<= lshift-assign
+symbol >>= rshift-assign
+symbol &= ampersand-assign
+symbol ^= caret-assign
+symbol |= pipe-assign
+symbol , comma
+symbol ; semicolon
+# symbol # hash
+# symbol ## hash-hash
+
+
+translation-unit:
+    external-declarations_opt
+
+external-declarations:
+    external-declaration
+    external-declarations external-declaration
+
+external-declaration:
+    function-definition
+    declaration
+    asm-definition
+    ;
+    __extension__ external-declaration
+#    pragma
+
+declaration:
+    declaration-specifiers init-declarator-list_opt ;
+    static-assert-declaration
+
+function-definition:
+    declaration-specifiers_opt declarator declaration-list_opt compound-statement
+
+declaration-list:
+    declaration
+    declaration-list declaration
+
+init-declarator-list:
+    init-declarator
+    init-declarator-list init-declarator
+
+init-declarator:
+    declarator simple-asm-expr_opt attributes_opt
+    declarator simple-asm-expr_opt attributes_opt = initializer
+
+nested-function-definition:
+    declaration-specifiers declarator declaration-list_opt compound-statement
+
+asm-definition:
+    simple-asm-expr ;
+
+static-assert-declaration:
+    static-assert-declaration-no-semi ;
+
+static-assert-declaration-no-semi:
+    _Static_assert ( constant-expression , string-literal )
+
+declaration-specifiers:
+    storage-class-specifier declaration-specifiers_opt
+    type-specifier declaration-specifiers_opt
+    type-qualifier declaration-specifiers_opt
+    function-specifier declaration-specifiers_opt
+    alignment-specifier declaration-specifiers_opt
+    attributes declaration-specifiers_opt
+
+storage-class-specifier:
+    typedef
+    extern
+    static
+    auto
+    register
+    _Thread_local
+    __thread
+
+function-specifier:
+    inline
+    _Noreturn
+
+type-specifier:
+    void
+    char
+    short
+    int
+    long
+    float
+    double
+    signed
+    unsigned
+    _Bool
+    _Complex
+    struct-or-union-specifier
+    enum-specifier
+    typedef-name
+    atomic-type-specifier
+    typeof-specifier
+    __auto_type
+#    __intN 0-3
+    _Decimal32
+    _Decimal64
+    _Decimal128
+    _Fract
+    _Accum
+    _Sat
+
+type-qualifier:
+    const
+    restrict
+    volatile
+    _Atomic
+    address-space
+
+atomic-type-specifier:
+    _Atomic ( type-name )
+
+enum-specifier:
+    enum attributes_opt identifier_opt { enumerator-list } attributes_opt
+    enum attributes_opt identifier_opt { enumerator-list , } attributes_opt
+    enum attributes_opt identifier
+
+enumerator-list:
+    enumerator
+    enumerator-list , enumerator
+
+enumerator:
+    enumeration-constant
+    enumeration-constant = constant-expression
+
+enumeration-constant:
+    identifier
+
+struct-or-union-specifier:
+    struct-or-union attributes_opt identifier_opt { struct-contents_opt } attributes_opt
+    struct-or-union attributes_opt identifier
+
+struct-or-union:
+    struct
+    union
+
+struct-contents:
+    struct-declaration-list
+    struct-declaration
+    struct-declaration-list struct-declaration
+
+struct-declaration-list:
+    struct-declaration ;
+    struct-declaration-list struct-declaration ;
+    struct-declaration-list ;
+    ;
+#    pragma
+#    struct-declaration-list pragma
+
+struct-declaration:
+    specifier-qualifier-list struct-declarator-list
+    static-assert-declaration-no-semi
+    __extension__ struct-declaration
+    specifier-qualifier-list
+
+specifier-qualifier-list:
+    type-specifier specifier-qualifier-list_opt
+    type-qualifier specifier-qualifier-list_opt
+    attributes specifier-qualifier-list_opt
+
+struct-declarator-list:
+    struct-declarator
+    struct-declarator-list , attributes_opt struct-declarator
+
+struct-declarator:
+    declarator attributes_opt
+    declarator_opt : constant-expression attributes_opt
+
+typeof-specifier:
+    typeof ( expression )
+    typeof ( type-name )
+
+alignment-specifier:
+    _Alignas ( type-name )
+    _Alignas ( constant-expression )
+
+
+declarator:
+    pointer_opt direct-declarator
+
+direct-declarator:
+    identifier
+    ( attributes_opt declarator )
+    direct-declarator array-declarator
+    direct-declarator ( parameter-type-list )
+    direct-declarator ( identifier-list_opt )
+    direct-declarator ( parameter-forward-declarations parameter-type-list_opt )
+
+
+pointer:
+    * type-qualifier-list_opt
+    * type-qualifier-list_opt pointer
+
+type-qualifier-list:
+    type-qualifier
+    attributes
+    type-qualifier-list type-qualifier
+    type-qualifier-list attributes
+
+array-declarator:
+    [ type-qualifier-list_opt assignment-expression_opt ]
+    [ static type-qualifier-list_opt assignment-expression ]
+    [ type-qualifier-list static assignment-expression ]
+    [ type-qualifier-list_opt * ]
+
+parameter-type-list:
+    parameter-list
+    parameter-list , ...
+
+parameter-list:
+    parameter-declaration
+    parameter-list , parameter-declaration
+
+parameter-declaration:
+    declaration-specifiers declarator attributes_opt
+    declaration-specifiers abstract-declarator_opt attributes_opt
+#    pragma parameter-declaration
+
+identifier-list:
+    identifier
+    identifier-list , identifier
+
+abstract-declarator:
+    pointer
+    pointer_opt direct-abstract-declarator
+
+direct-abstract-declarator:
+    ( attributes_opt abstract-declarator )
+    direct-abstract-declarator_opt array-declarator
+    direct-abstract-declarator_opt ( parameter-type-list_opt )
+    direct-abstract-declarator_opt ( parameter-forward-declarations parameter-type-list_opt )
+
+parameter-forward-declarations:
+    parameter-list ;
+    parameter-forward-declarations parameter-list ;
+
+asm-string-literal:
+    string-literal
+
+simple-asm-expr:
+    asm ( asm-string-literal )
+
+attributes:
+    attributes_opt attribute
+
+attribute:
+    __attribute__ ( ( attribute-list ) )
+
+attribute-list:
+    attrib_opt
+    attribute-list , attrib_opt
+
+attrib:
+    any-word
+    any-word ( identifier )
+    any-word ( identifier , nonempty-expr-list )
+    any-word ( expr-list )
+
+any-word:
+    identifier
+#    typedef-name
+    storage-class-specifier
+    type-specifier
+    type-qualifier
+
+type-name:
+    specifier-qualifier-list abstract-declarator_opt
+
+initializer:
+    assignment-expression
+    { initializer-list }
+    { initializer-list , }
+    { }
+
+
+initializer-list:
+    designation_opt initializer
+    initializer-list , designation_opt initializer
+
+designation:
+    designator-list =
+    array-designator
+    identifier :
+
+
+designator-list:
+    designator
+    designator-list designator
+
+designator:
+    array-designator
+    . identifier
+
+array-designator:
+    [ constant-expression ]
+    [ constant-expression ... constant-expression ]
+
+
+compound-statement:
+    { block-item-list_opt }
+    { label-declarations block-item-list }
+
+block-item-list:
+    block-item
+    block-item-list block-item
+
+block-item:
+    nested-declaration
+    statement
+#    pragma
+
+nested-declaration:
+    declaration
+    __extension__ nested-declaration
+    nested-function-definition
+
+label-declarations:
+    label-declaration
+    label-declarations label-declaration
+
+label-declaration:
+    __label__ identifier-list ;
+
+
+label:
+    identifier : attributes_opt
+    case constant-expression :
+    default :
+    case constant-expression ... constant-expression :
+
+statement:
+    labeled-statement
+    compound-statement
+    expression-statement
+    selection-statement
+    iteration-statement
+    jump-statement
+    asm-statement
+
+labeled-statement:
+    label statement
+
+expression-statement:
+    expression_opt ;
+
+selection-statement:
+    if-statement
+    switch-statement
+
+iteration-statement:
+    while-statement
+    do-statement
+    for-statement
+
+jump-statement:
+    goto identifier ;
+    continue ;
+    break ;
+    return expression_opt ;
+    goto * expression ;
+
+
+condition:
+    ( expression )
+
+if-statement:
+    if condition statement
+    if condition statement else statement
+
+
+switch-statement:
+    switch ( expression ) statement
+
+while-statement:
+     while condition statement
+
+do-statement:
+    do statement while condition ;
+
+for-statement:
+    for ( expression_opt ; expression_opt ; expression_opt ) statement
+    for ( nested-declaration expression_opt ; expression_opt ) statement
+
+
+asm-statement:
+    asm type-qualifier_opt ( asm-argument ) ;
+    asm type-qualifier_opt goto ( asm-goto-argument ) ;
+
+asm-argument:
+    asm-string-literal
+    asm-string-literal : asm-operands_opt
+    asm-string-literal : asm-operands_opt : asm-operands_opt
+    asm-string-literal : asm-operands_opt : asm-operands_opt : asm-clobbers_opt
+
+asm-goto-argument:
+    asm-string-literal : : asm-operands_opt : asm-clobbers_opt : asm-goto-operands
+
+asm-operands:
+    asm-operand
+    asm-operands , asm-operand
+
+asm-operand:
+    asm-string-literal ( expression )
+    [ identifier ] asm-string-literal ( expression )
+
+asm-clobbers:
+    asm-string-literal
+    asm-clobbers , asm-string-literal
+
+asm-goto-operands:
+    identifier
+    asm-goto-operands , identifier
+
+
+assignment-expression:
+    conditional-expression
+    unary-expression assignment-operator assignment-expression
+
+assignment-operator:
+    =
+    *=
+    /=
+    %=
+    +=
+    -=
+    <<=
+    >>=
+    &=
+    ^=
+    |=
+
+conditional-expression:
+    logical-or-expression
+    logical-or-expression ? expression : conditional-expression
+    logical-or-expression ? : conditional-expression
+
+
+multiplicative-expression:
+    cast-expression
+    multiplicative-expression * cast-expression
+    multiplicative-expression / cast-expression
+    multiplicative-expression % cast-expression
+
+additive-expression:
+    multiplicative-expression
+    additive-expression + multiplicative-expression
+    additive-expression - multiplicative-expression
+
+shift-expression:
+    additive-expression
+    shift-expression << additive-expression
+    shift-expression >> additive-expression
+
+relational-expression:
+    shift-expression
+    relational-expression < shift-expression
+    relational-expression > shift-expression
+    relational-expression <= shift-expression
+    relational-expression >= shift-expression
+
+equality-expression:
+    relational-expression
+    equality-expression == relational-expression
+    equality-expression != relational-expression
+
+and-expression:
+    equality-expression
+    and-expression & equality-expression
+
+exclusive-or-expression:
+    and-expression
+    exclusive-or-expression ^ and-expression
+
+inclusive-or-expression:
+    exclusive-or-expression
+    inclusive-or-expression | exclusive-or-expression
+
+logical-and-expression:
+    inclusive-or-expression
+    logical-and-expression && inclusive-or-expression
+
+logical-or-expression:
+    logical-and-expression
+    logical-or-expression || logical-and-expression
+
+
+cast-expression:
+    unary-expression
+    ( type-name ) unary-expression
+
+unary-expression:
+    postfix-expression
+    ++ unary-expression
+    -- unary-expression
+    unary-operator cast-expression
+    sizeof unary-expression
+    sizeof ( type-name )
+    __alignof__ unary-expression
+    __alignof__ ( type-name )
+    && identifier
+
+unary-operator:
+    &
+    *
+    +
+    -
+    ~
+    !
+    __extension__
+    __real__
+    __imag__
+
+generic-selection:
+    _Generic ( assignment-expression , generic-assoc-list )
+
+generic-assoc-list:
+    generic-association
+    generic-assoc-list , generic-association
+
+generic-association:
+    type-name : assignment-expression
+    default : assignment-expression
+
+
+postfix-expression:
+    primary-expression
+    postfix-expression [ expression ]
+    postfix-expression ( argument-expression-list_opt )
+    postfix-expression . identifier
+    postfix-expression -> identifier
+    postfix-expression ++
+    postfix-expression --
+    ( type-name ) { initializer-list }
+    ( type-name ) { initializer-list , }
+
+argument-expression-list:
+    argument-expression
+    argument-expression-list , argument-expression
+
+primary-expression:
+    identifier
+    constant
+    string-literal
+    ( expression )
+    generic-selection
+    __func__
+    __FUNCTION__
+    __PRETTY_FUNCTION__
+    ( compound-statement )
+    __builtin_va_arg ( assignment-expression , type-name )
+    __builtin_offsetof ( type-name , offsetof-member-designator )
+    __builtin_choose_expr ( assignment-expression , assignment-expression , assignment-expression )
+    __builtin_types_compatible_p ( type-name , type-name )
+    __builtin_complex ( assignment-expression , assignment-expression )
+    __builtin_shuffle ( assignment-expression , assignment-expression )
+    __builtin_shuffle ( assignment-expression , assignment-expression , assignment-expression )
+
+offsetof-member-designator:
+    identifier
+    offsetof-member-designator . identifier
+    offsetof-member-designator [ expression ]
+
+
+expression:
+    assignment-expression
+    expression , assignment-expression
+
+expr-list:
+    nonempty-expr-list
+
+nonempty-expr-list:
+    assignment-expression
+    nonempty-expr-list , assignment-expression
+
+
+constant:
+    floating-constant
+    integer-constant
+    character-constant
+integer-constant:
+    decimal-constant
+    octal-constant
+    hexadecimal-constant
+
+argument-expression:
+    assignment-expression
+
+constant-expression:
+    conditional-expression

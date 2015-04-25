@@ -39,7 +39,7 @@ export LD_LIBRARY_PATH:=.:${LD_LIBRARY_PATH}
 .SECONDARY:
 .DELETE_ON_ERROR:
 
-default: hello.gen.run hello2.gen.run
+default: hello.gen.run hello2.gen.run gnu-c.gen.o
 test: default
 	./test_nicate.py
 

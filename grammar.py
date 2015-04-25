@@ -41,7 +41,8 @@ generated_copyright = '''
 '''
 
 class GrammarError(Exception):
-    pass
+    def __init__(self, a, b):
+        super().__init__(self, '%s: %s' % (a, b))
 
 class IdentifierCase:
     __slots__ = ('space', 'dash', 'lower', 'upper', 'camel', 'visual')
@@ -54,7 +55,7 @@ class IdentifierCase:
         space = self.space = name.replace('-', ' ')
         lower = self.lower = name.replace('-', '_')
         self.upper = lower.upper()
-        self.camel = ''.join([x + ('_' if x[-1].isdigit() else '') for x in space.title().split()])
+        self.camel = ''.join([x + ('_' if x[-1].isdigit() else '') for x in space.title().split()]).rstrip('_')
         self.visual = visual or name
 
     def __repr__(self):
@@ -97,77 +98,122 @@ class Grammar:
         cur_name = None
         cur_rule = None
 
-        for line in src:
-            line = line.strip()
+        for i, orig_line in enumerate(src, 1):
+            line = orig_line.strip()
             if line.startswith('#') or not line:
                 continue
             words = line.split()
             if words[0] == 'language':
                 if self.language:
-                    raise GrammarError('language specified twice')
+                    raise GrammarError(i, 'language specified twice')
                 if len(words) != 2:
-                    raise GrammarError('language takes 1 argument')
+                    raise GrammarError(i, 'language takes 1 argument')
                 self.language = IdentifierCase(words[1])
                 continue
             if not self.language:
-                raise GrammarError('language not specified')
+                raise GrammarError(i, 'language not specified')
             if cur_rule is None:
                 if words[0] == 'keyword':
                     if len(words) != 2:
-                        raise GrammarError('keyword takes 1 argument')
+                        raise GrammarError(i, 'keyword takes 1 argument')
                     self.add_keyword(words[1])
                     continue
                 elif words[0] == 'atom':
                     if len(words) != 2:
-                        raise GrammarError('atom takes 1 argument')
+                        raise GrammarError(i, 'atom takes 1 argument')
                     self.add_atom(words[1])
                     continue
                 elif words[0] == 'symbol':
                     if len(words) != 3:
-                        raise GrammarError('symbol takes 2 argument')
+                        raise GrammarError(i, 'symbol takes 2 argument')
                     self.add_symbol(words[1], words[2])
                     continue
             if line.endswith(':') and len(line) != 1 and len(words) == 1:
+                if not orig_line[0].strip():
+                    raise GrammarError(i, 'Rule names should not be indented')
                 if cur_rule is not None:
                     self.add_rule(cur_name, cur_rule)
                 cur_name = line[:-1]
                 cur_rule = []
             else:
+                if orig_line[0].strip():
+                    raise GrammarError(i, 'Rule bodies should be indented')
                 cur_rule.append(words)
         if cur_rule is None:
-            raise GrammarError('no rules')
+            raise GrammarError('eof', 'no rules')
         self.add_rule(cur_name, cur_rule)
 
-        for v in self.rules.values():
+        print('%d rules parsed; resolving cross-references ...' % len(self.rules))
+        undefined = set()
+        used = {'translation-unit'}
+        for v in sorted(self.rules.values(), key=lambda x: x.tag.space):
             if isinstance(v, (Alternative, Sequence)):
                 for i, b in enumerate(v.bits):
                     if isinstance(b, IdentifierCase):
-                        v.bits[i] = self.rules[b.visual]
-            elif isinstance(v, Option):
+                        used.add(b.visual)
+                        try:
+                            v.bits[i] = self.rules[b.visual]
+                        except KeyError:
+                            undefined.add(b.visual)
+                    else:
+                        used.add(b.tag.visual)
+            elif isinstance(v, (Alias, Option)):
                 if isinstance(v.child, IdentifierCase):
-                    v.child = self.rules[v.child.visual]
+                    used.add(v.child.visual)
+                    try:
+                        v.child = self.rules[v.child.visual]
+                    except KeyError:
+                        undefined.add(v.child.visual)
+                else:
+                    used.add(v.child.tag.visual)
+        unused = set(self.rules.keys()) - used
+        if unused:
+            print('Warning: Unused rules (%d):' % len(unused))
+            for v in sorted(unused):
+                print('-', v)
+        if undefined:
+            print('Error: Undefined rules (%d):' % len(undefined))
+            for v in sorted(undefined):
+                print('-', v)
+            raise KeyError('%d rules' % len(undefined))
+
+    def set_rule(self, k, v):
+        if self.rules.setdefault(k, v) is not v:
+            raise KeyError(k)
+        return v
 
     def add_keyword(self, ty):
-        self.rules[ty] = Term(IdentifierCase('kw-' + ty, ty), False)
+        nouscore = ty.strip('_').replace('_', '-')
+        if ty.startswith('_'):
+            nouscore = nouscore.lower()
+        self.set_rule(ty, Term(IdentifierCase('kw-' + nouscore, ty), False))
 
     def add_atom(self, ty):
-        self.rules[ty] = Term(IdentifierCase('atom-' + ty, ty), True)
+        self.set_rule(ty, Term(IdentifierCase('atom-' + ty, ty), True))
 
     def add_symbol(self, sym, ty):
-        self.rules[sym] = Term(IdentifierCase('sym-' + ty, sym), False)
+        self.set_rule(sym, Term(IdentifierCase('sym-' + ty, sym), False))
 
     def add_rule(self, name, alts):
         if len(alts) == 0:
-            raise GrammarError('empty rule')
+            raise GrammarError(name, 'empty rule')
         elif len(alts) == 1:
             if len(alts[0]) == 1:
-                raise GrammarError('rules without alternative must have 2 or more in sequence')
-            self.rules[name] = Sequence(name, [self.get_rule(a) for a in alts[0]])
+                self.set_rule(name, Alias(name, self.get_rule(alts[0][0])))
+            else:
+                self.set_rule(name, Sequence(name, [self.get_rule(a) for a in alts[0]]))
         else:
-            for a in alts:
+            for i, a in enumerate(alts):
                 if len(a) != 1:
-                    raise GrammarError('rule with alternative must not have sequences')
-            self.rules[name] = Alternative(name, [self.get_rule(a) for a, in alts])
+                    alts[i] = [self.anon_seq(alts[i])]
+            self.set_rule(name, Alternative(name, [self.get_rule(a) for a, in alts]))
+
+    def anon_seq(self, bits):
+        rule_bits = [self.get_rule(a) for a in bits]
+        tag = '-'.join([r.tag.dash.split('-', 1)[1] if isinstance(r, Rule) else r.dash for r in rule_bits])
+        tag = 'anon-' + tag
+        self.set_rule(tag, Sequence(tag, rule_bits))
+        return tag
 
     def get_rule(self, vis):
         if vis.endswith('_opt'):
@@ -183,7 +229,7 @@ class Grammar:
                 base2 = maybe_tok.tag.dash.split('-', 1)[1]
             else:
                 base2 = base
-            rv = self.rules[vis] = Option(IdentifierCase('opt-' + base2, vis), self.get_rule(base))
+            rv = self.set_rule(vis, Option(IdentifierCase('opt-' + base2, vis), self.get_rule(base)))
         return rv
 
 class Rule:
@@ -203,6 +249,12 @@ class Option(Rule):
     __slots__ = ('tag', 'child')
     def __init__(self, tag, child):
         self.tag = tag
+        self.child = child
+
+class Alias(Rule):
+    __slots__ = ('tag', 'child')
+    def __init__(self, tag, child):
+        self.tag = IdentifierCase('alias-' + tag, tag)
         self.child = child
 
 class Sequence(Rule):
@@ -377,6 +429,8 @@ def emit(grammar, header, source):
             c('    return ast->type == %s;' % (lang + ast.tag).upper)
         if isinstance(ast, Option):
             c('    return %%(is_nothing)s(ast) || %s(ast);' % (lang + 'is' + ast.child.tag).lower)
+        if isinstance(ast, Alias):
+            c('    return %s(ast);' % (lang + 'is' + ast.child.tag).lower)
         if isinstance(ast, Alternative):
             c('    return %s;' % (' || '.join('%s(ast)' % (lang + 'is' + b.tag).lower for b in ast.bits)))
         c('}')
@@ -434,6 +488,8 @@ def emit(grammar, header, source):
         c('        no_space |= strcmp(prev, "!") == 0 && prev_parent == %(upper)s_TREE_LOGICAL_NOT_EXPRESSION;')
         c('        no_space |= strcmp(prev, "sizeof") == 0 && strcmp(next, "(") == 0;')
         c('        no_space |= strcmp(prev, ")") == 0 && prev_parent == %(upper)s_TREE_CAST_EXPRESSION;')
+    else:
+        c('        (void)prev_parent;')
     c('        if (newline)')
     c('        {')
     c('            size_t i;')
