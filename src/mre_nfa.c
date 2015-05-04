@@ -32,7 +32,6 @@
 #define NFA_START 0
 #define NFA_ACCEPT 1
 
-typedef struct MultiNfa MultiNfa;
 typedef struct NfaPair NfaPair;
 typedef struct NfaEpsilonKey NfaEpsilonKey;
 typedef struct NfaCharKey NfaCharKey;
