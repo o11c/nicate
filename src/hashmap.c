@@ -28,10 +28,11 @@
 
 #define GROW 3/4
 
-typedef struct HashChain HashChain;
-struct HashChain
+typedef HashIterator HashChain;
+struct HashIterator
 {
     HashChain *next;
+    HashChain *iter;
     HashEntry entry;
     uint32_t hash;
 };
@@ -39,6 +40,7 @@ struct HashChain
 struct HashMap
 {
     HashChain **buckets;
+    HashChain *iter;
     size_t num_buckets;
     size_t num_entries;
 };
@@ -48,24 +50,26 @@ HashMap *map_create(void)
     HashMap *rv = (HashMap *)calloc(1, sizeof(HashMap));
     rv->num_entries = 0;
     rv->num_buckets = 16;
+    rv->iter = NULL;
     rv->buckets = (HashChain **)calloc(rv->num_buckets, sizeof(HashChain *));
     return rv;
 }
 
 void map_destroy(HashMap *map)
 {
-    size_t i;
-    for (i = 0; i < map->num_buckets; ++i)
     {
-        HashChain *bucket = map->buckets[i];
+        size_t size = map->num_entries;
+        HashChain *bucket = map->iter;
         while (bucket)
         {
-            HashChain *next = bucket->next;
+            HashChain *next = bucket->iter;
             free(bucket->entry.key.data);
-            /* value is not our problem, but there is no iteration ... */
+            /* value is not our problem */
             free(bucket);
             bucket = next;
+            --size;
         }
+        assert (size == 0);
     }
     free(map->buckets);
     free(map);
@@ -125,11 +129,31 @@ HashEntry *map_entry(HashMap *map, HashKey key)
     }
     bucket = (HashChain *)calloc(1, sizeof(HashChain));
     bucket->next = map->buckets[h % map->num_buckets];
+    bucket->iter = map->iter;
     bucket->entry.key.data = (unsigned char *)malloc(key.len);
     memcpy(bucket->entry.key.data, key.data, key.len);
     bucket->entry.key.len = key.len;
     bucket->entry.value.ptr = NULL;
     bucket->hash = h;
     map->buckets[h % map->num_buckets] = bucket;
+    map->iter = bucket;
     return &bucket->entry;
+}
+
+HashIterator *map_first(HashMap *map)
+{
+    return map->iter;
+}
+HashIterator *map_next(HashIterator *it)
+{
+    return it->iter;
+}
+HashEntry *map_deref(HashIterator *it)
+{
+    return &it->entry;
+}
+
+size_t map_size(HashMap *map)
+{
+    return map->num_entries;
 }

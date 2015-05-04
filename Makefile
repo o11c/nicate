@@ -23,7 +23,16 @@ LDLIBS =
 
 WARNINGS = -Werror -Wall -Wextra -Wformat -Wunused -Wc++-compat -Wmissing-declarations -Wredundant-decls
 
-LIB_OBJECTS = builder.o bridge.o c89.gen.o pool.o hashmap.o PMurHash.o
+LIB_OBJECTS = \
+    builder.o \
+    bridge.o \
+    c89.gen.o \
+    pool.o \
+    hashmap.o \
+    bitset.o \
+    mre_nfa.o \
+    mre_run.o \
+    PMurHash.o
 
 MKDIR_FIRST = @mkdir -p ${@D}
 
@@ -42,10 +51,11 @@ export LD_LIBRARY_PATH:=.:${LD_LIBRARY_PATH}
 .SECONDARY:
 .DELETE_ON_ERROR:
 
-default: hello.gen.run hello2.gen.run obj/gnu-c.gen.o
+default: hello.gen.run hello2.gen.run obj/gnu-c.gen.o bin/lex.x
 test: default
 	./test_nicate.py
 
+bin/lex.x: obj/lex.o lib/libnicate.so
 bin/hello.x: obj/hello.o lib/libnicate.so
 lib/libnicate.so: $(addprefix obj/,${LIB_OBJECTS})
 # force order

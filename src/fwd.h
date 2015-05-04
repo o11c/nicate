@@ -23,9 +23,9 @@ typedef struct HashKey HashKey;
 typedef struct HashValue HashValue;
 typedef struct HashEntry HashEntry;
 typedef struct HashMap HashMap;
+typedef struct HashIterator HashIterator;
 
 typedef struct Pool Pool;
-typedef void *(*PoolTransform)(Pool *pool, const void *str, size_t len);
 
 typedef struct Builder Builder;
 typedef struct BuildTranslationUnit BuildTranslationUnit;
@@ -42,3 +42,10 @@ typedef struct BuildExpression BuildExpression;
 
 typedef struct BuildTypePairDeclarator BuildTypePairDeclarator;
 typedef struct BuildTypePairAbstractDeclarator BuildTypePairAbstractDeclarator;
+
+typedef struct Nfa Nfa;
+typedef struct MultiNfa MultiNfa;
+typedef struct MreRuntime MreRuntime;
+
+typedef struct BitSet BitSet;
+typedef struct CharBitSet CharBitSet;

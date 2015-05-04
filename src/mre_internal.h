@@ -23,12 +23,28 @@
 #include "fwd.h"
 
 
-typedef void *(*PoolTransform)(Pool *pool, const void *str, size_t len);
-typedef void (*PoolFree)(void *);
+typedef struct MreState MreState;
+typedef struct MreRules MreRules;
 
-Pool *pool_create(void);
-void pool_destroy(Pool *pool);
-void pool_free(Pool *pool, PoolFree free_func, void *ptr);
-const void *pool_intern(Pool *pool, const void *str, size_t len);
-const char *pool_intern_string(Pool *pool, const char *str);
-const void *pool_intern_map(Pool *pool, PoolTransform transform, const void *str, size_t len);
+/*
+    It is illegal to construct a state table:
+      - that accepts the empty string, or
+      - that does not accept anything.
+*/
+struct MreState
+{
+    size_t accept;
+    /* TODO make variable-sized. */
+    size_t gotos[256];
+};
+
+struct MreRules
+{
+    size_t refcount;
+    size_t num_rules;
+    /* TODO put character-class tables here. */
+    MreState *states;
+};
+
+
+MreRules *multi_nfa_to_dfa(MultiNfa *m);

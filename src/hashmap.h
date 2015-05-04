@@ -43,3 +43,8 @@ struct HashEntry
 HashMap *map_create(void);
 void map_destroy(HashMap *map);
 HashEntry *map_entry(HashMap *map, HashKey key);
+
+HashIterator *map_first(HashMap *map);
+HashIterator *map_next(HashIterator *it);
+HashEntry *map_deref(HashIterator *it);
+size_t map_size(HashMap *map);

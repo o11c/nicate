@@ -23,6 +23,7 @@
 
 #include "hashmap.h"
 
+
 /*
     TODO group by free_func, it's probably a huge win.
 
@@ -32,7 +33,7 @@
 typedef struct FreeEntry FreeEntry;
 struct FreeEntry
 {
-    void (*free_func)(void *ptr);
+    PoolFree free_func;
     void *ptr;
 };
 
@@ -70,7 +71,7 @@ void pool_destroy(Pool *pool)
     free(pool);
 }
 
-void pool_free(Pool *pool, void (*free_func)(void *ptr), void *ptr)
+void pool_free(Pool *pool, PoolFree free_func, void *ptr)
 {
     FreeEntry entry = {free_func, ptr};
     if (pool->free_size == pool->free_cap)

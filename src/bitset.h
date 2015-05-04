@@ -18,17 +18,35 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <stdbool.h>
 #include <stddef.h>
 
 #include "fwd.h"
 
 
-typedef void *(*PoolTransform)(Pool *pool, const void *str, size_t len);
-typedef void (*PoolFree)(void *);
+struct CharBitSet
+{
+    size_t _data[256 / (sizeof(size_t) * 8)];
+};
 
-Pool *pool_create(void);
-void pool_destroy(Pool *pool);
-void pool_free(Pool *pool, PoolFree free_func, void *ptr);
-const void *pool_intern(Pool *pool, const void *str, size_t len);
-const char *pool_intern_string(Pool *pool, const char *str);
-const void *pool_intern_map(Pool *pool, PoolTransform transform, const void *str, size_t len);
+BitSet *bitset_create(size_t bits);
+void bitset_destroy(BitSet *b);
+
+void bitset_set(BitSet *b, size_t i);
+void bitset_unset(BitSet *b, size_t i);
+bool bitset_test(BitSet *b, size_t i);
+
+void bitset_invert(BitSet *b);
+void bitset_erase(BitSet *b);
+bool bitset_any(BitSet *b);
+
+HashKey bitset_as_key(BitSet *b);
+
+
+void char_bitset_set(CharBitSet *b, unsigned char i);
+void char_bitset_unset(CharBitSet *b, unsigned char i);
+bool char_bitset_test(CharBitSet *b, unsigned char i);
+
+void char_bitset_invert(CharBitSet *b);
+void char_bitset_erase(CharBitSet *b);
+bool char_bitset_any(CharBitSet *b);
