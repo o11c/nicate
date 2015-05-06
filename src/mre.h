@@ -39,6 +39,9 @@ Nfa *nfa_cat(Pool *pool, Nfa *left, Nfa *right);
 Nfa *nfa_opt(Pool *pool, Nfa *inner);
 Nfa *nfa_star(Pool *pool, Nfa *inner);
 Nfa *nfa_plus(Pool *pool, Nfa *inner);
+
+Nfa *nfa_parse_regex(Pool *pool, const char *re);
+Nfa *nfa_parse_regex_slice(Pool *pool, const char *re, size_t re_len);
 /* There is no public delete function; the pool takes care of that. */
 
 

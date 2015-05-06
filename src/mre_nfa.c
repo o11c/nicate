@@ -201,6 +201,7 @@ static void *transform_cat(Pool *pool, const void *str, size_t len)
     size_t right_offset = nfa_merge(rv, p.b);
     nfa_add_epsilon(rv, NFA_START, left_offset + NFA_START);
     nfa_add_epsilon(rv, left_offset + NFA_ACCEPT, right_offset + NFA_START);
+    nfa_add_epsilon(rv, right_offset + NFA_ACCEPT, NFA_ACCEPT);
     return rv;
 }
 /* TODO figure out which of these should be kept */
@@ -308,13 +309,17 @@ Nfa *nfa_text_slice(Pool *pool, const char *str, size_t len)
 Nfa *nfa_class_slice(Pool *pool, const char *str, size_t len)
 {
     CharBitSet cbs = char_bitset_from(str, len);
-    return (Nfa *)pool_intern_map(pool, transform_class, &cbs, sizeof(cbs));
+    return nfa_class_set(pool, &cbs);
 }
 Nfa *nfa_class_compl_slice(Pool *pool, const char *str, size_t len)
 {
     CharBitSet cbs = char_bitset_from(str, len);
     char_bitset_invert(&cbs);
-    return (Nfa *)pool_intern_map(pool, transform_class, &cbs, sizeof(cbs));
+    return nfa_class_set(pool, &cbs);
+}
+Nfa *nfa_class_set(Pool *pool, CharBitSet *cbs)
+{
+    return (Nfa *)pool_intern_map(pool, transform_class, cbs, sizeof(*cbs));
 }
 Nfa *nfa_alt(Pool *pool, Nfa *a, Nfa *b)
 {

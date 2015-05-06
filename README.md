@@ -7,7 +7,7 @@ C APIs:
   - grammar-based c89 construction and output
   - logical (but typeless) c89 construction and output
   - (planned) type-aware ast construction and output
-  - (planned) parallel regex lexer stepping library
+  - parallel regex lexer stepping library
   - (planned) push-based parser library
   - (limited) bnf-like parser so you can output something else instead of c89
   - (possible) other output modes (gccjit & llvm C APIs, via dlopen)
@@ -16,6 +16,7 @@ C APIs:
 Python3 APIs:
   - logical c89 construction and output
   - limited bnf-like parser so you can output something else instead of c89
+  - (planned) parallel regex lexer stepping library
 
 See hello.c and hello2.py for example client code.
 

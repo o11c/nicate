@@ -47,4 +47,6 @@ struct MreRules
 };
 
 
+Nfa *nfa_class_set(Pool *pool, CharBitSet *cbs);
+
 MreRules *multi_nfa_to_dfa(MultiNfa *m);

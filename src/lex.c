@@ -28,30 +28,40 @@
 const char *names[] =
 {
     "error",
+    "\\ *[ \\n]",
     "a",
-    "b",
+    "bc",
+    "'def'",
+    "\"ghi\"",
+    "(jkl)",
+    "mn|op",
+    "[][-]",
+    "[^A-Za-z0-9]",
 };
 
-static MreRuntime *build()
+static MreRuntime *build(void)
 {
     MreRuntime *rv;
     MultiNfa *m = multi_nfa_create();
     Pool *p = pool_create();
 
-    Nfa *tok_a = nfa_char(p, 'a');
-    size_t id_a = multi_nfa_add(m, tok_a);
-    Nfa *tok_b = nfa_char(p, 'b');
-    size_t id_b = multi_nfa_add(m, tok_b);
+    size_t i;
 
-    (void)id_a;
-    (void)id_b;
+    for (i = 1; i < sizeof(names)/sizeof(names[0]); ++i)
+    {
+        Nfa *nfa = nfa_parse_regex(p, names[i]);
+        size_t id = multi_nfa_add(m, nfa);
+        (void)id;
+        assert (id == i);
+    }
 
     rv = mre_runtime_create(m, NULL);
+    pool_destroy(p);
     multi_nfa_destroy(m);
     return rv;
 }
 
-static void play(MreRuntime *r)
+static void feed_file(MreRuntime *r, FILE *in)
 {
     size_t fed = 0;
     size_t size = 0;
@@ -67,11 +77,11 @@ static void play(MreRuntime *r)
         }
         if (fed == size)
         {
-            rv = getchar();
+            rv = fgetc(in);
             if (rv == EOF)
             {
                 size_t match = mre_runtime_match_id(r);
-                puts(names[match]);
+                printf("final match: %s\n", names[match]);
                 return;
             }
             buffer[size++] = rv;
@@ -84,7 +94,7 @@ static void play(MreRuntime *r)
         {
             size_t match = mre_runtime_match_id(r);
             size_t len = mre_runtime_match_len(r);
-            puts(names[match]);
+            printf("match: %s\n", names[match]);
             size -= len;
             fed = 0;
             memmove(buffer, buffer + len, size);
@@ -93,10 +103,14 @@ static void play(MreRuntime *r)
     }
 }
 
-int main()
+int main(int argc, char **argv)
 {
     MreRuntime *r = build();
-    play(r);
+    if (argc == 1)
+    {
+        feed_file(r, stdin);
+    }
+    (void)argv;
     mre_runtime_destroy(r);
 
     return 0;

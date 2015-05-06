@@ -32,6 +32,7 @@ LIB_OBJECTS = \
     bitset.o \
     mre_nfa.o \
     mre_run.o \
+    mre_re.o \
     PMurHash.o
 
 MKDIR_FIRST = @mkdir -p ${@D}
