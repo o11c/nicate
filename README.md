@@ -16,7 +16,7 @@ C APIs:
 Python3 APIs:
   - logical c89 construction and output
   - limited bnf-like parser so you can output something else instead of c89
-  - (planned) parallel regex lexer stepping library
+  - parallel regex lexer stepping library
 
 See hello.c and hello2.py for example client code.
 

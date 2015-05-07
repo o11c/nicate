@@ -1,16 +1,43 @@
+#   Copyright © 2015 Ben Longbons
+#
+#   This file is part of Nicate.
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU Lesser General Public License as published
+#   by the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU Lesser General Public License for more details.
+#
+#   You should have received a copy of the GNU Lesser General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import cffi
+from collections import namedtuple
+
+
+def u2b(u):
+    return u.encode('utf-8', errors='surrogateescape')
+
+def b2u(b):
+    return b.decode('utf-8', errors='surrogateescape')
 
 def load():
     import sys
     assert sys.version_info[0] >= 3
     ffi = cffi.FFI()
     ffi.cdef('typedef uint64_t uintmax_t;')
-    with open('src/fwd.h') as f:
-        x = [l for l in f if not l.startswith('#')]
-        ffi.cdef('\n'.join(x))
-    with open('src/builder.h') as f:
-        x = [l for l in f if not l.startswith('#')]
-        ffi.cdef('\n'.join(x))
+    for fn in [
+            'src/fwd.h',
+            'src/builder.h',
+            'src/lexer.h',
+    ]:
+        with open(fn) as f:
+            x = [l for l in f if not l.startswith('#')]
+            ffi.cdef('\n'.join(x))
     return ffi
 
 nicate_ffi = load()
@@ -95,7 +122,7 @@ def make_fun(sk, lk, v):
                 actuals.append(len(a))
                 actuals.append([i._c_object for i in a])
             elif isinstance(a, str):
-                s = a.encode('utf-8', errors='surrogateescape')
+                s = u2b(a)
                 actuals.append(s)
             elif isinstance(a, (float, int)): #including bool
                 actuals.append(a)
@@ -137,12 +164,12 @@ for k, v in nicate_ffi._parser._declarations.items():
         if k.startswith('builder_'):
             getattr(nicate_library, k)
             continue
-        if k.endswith('_slice'):
-            # actually called from the other things
-            continue
-        assert k.startswith('build_')
-        sk = k[6:]
-        setattr(Builder, sk, make_fun(sk, k, v))
+        if k.startswith('build_'):
+            if k.endswith('_slice'):
+                # actually called from the other things
+                continue
+            sk = k[6:]
+            setattr(Builder, sk, make_fun(sk, k, v))
 
 def emit_to_file(tu, file):
     nicate_library.builder_emit_tu_to_file(tu._c_object, file)
@@ -152,9 +179,56 @@ def emit_to_string(tu):
     ptr = nicate_library.builder_emit_tu_to_string(tu._c_object)
     rv = nicate_ffi.string(ptr)
     nicate_library.builder_free_string(ptr);
-    return rv.decode('utf-8', errors='surrogateescape')
+    return b2u(rv)
 TranslationUnit.emit_to_string = emit_to_string
 
 del k, sk, v
 del make_class, make_fun, load
 del emit_to_file, emit_to_string
+
+
+def new_string(u):
+    b = u2b(u)
+    return nicate_ffi.new('char[]', b)
+
+Symbol = namedtuple('Symbol', ('name', 'regex'))
+
+class Lexicon:
+    __slots__ = ('_c_lexicon',)
+
+    def __init__(self, symbols):
+        syms = [(new_string(s.name), new_string(s.regex)) for s in symbols]
+        self._c_lexicon = nicate_library.lexicon_create(len(syms), nicate_ffi.new('Symbol[]', syms))
+
+    def __del__(self):
+        nicate_library.lexicon_destroy(self._c_lexicon)
+
+    def name(self, idx):
+        c = nicate_library.lexicon_name(self._c_lexicon, idx)
+        b = nicate_ffi.string(c)
+        return b2u(b)
+
+class Tokenizer:
+    __slots__ = ('_c_tokenizer', '_py_lexicon')
+
+    def __init__(self, lexicon):
+        self._c_tokenizer = nicate_library.tokenizer_create(lexicon._c_lexicon)
+        self._py_lexicon = lexicon
+
+    def __del__(self):
+        nicate_library.tokenizer_destroy(self._c_tokenizer)
+
+    def feed(self, u):
+        b = u2b(u)
+        nicate_library.tokenizer_feed_slice(self._c_tokenizer, b, len(b))
+
+    def get(self, at_eof):
+        t = self._c_tokenizer
+        if not at_eof and not nicate_library.tokenizer_ready(t):
+            return None
+        i = nicate_library.tokenizer_sym(t)
+        b = nicate_library.tokenizer_text_start(t)
+        l = nicate_library.tokenizer_text_len(t)
+        s = b2u(nicate_ffi.buffer(b, l)[:])
+        nicate_library.tokenizer_pop(t)
+        return (self._py_lexicon.name(i), s)

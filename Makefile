@@ -33,6 +33,7 @@ LIB_OBJECTS = \
     mre_nfa.o \
     mre_run.o \
     mre_re.o \
+    lexer.o \
     PMurHash.o
 
 MKDIR_FIRST = @mkdir -p ${@D}
@@ -52,11 +53,10 @@ export LD_LIBRARY_PATH:=.:${LD_LIBRARY_PATH}
 .SECONDARY:
 .DELETE_ON_ERROR:
 
-default: hello.gen.run hello2.gen.run obj/gnu-c.gen.o bin/lex.x
+default: hello.gen.run hello2.gen.run obj/gnu-c.gen.o
 test: default
 	./test_nicate.py
 
-bin/lex.x: obj/lex.o lib/libnicate.so
 bin/hello.x: obj/hello.o lib/libnicate.so
 lib/libnicate.so: $(addprefix obj/,${LIB_OBJECTS})
 # force order

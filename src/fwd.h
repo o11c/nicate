@@ -49,3 +49,7 @@ typedef struct MreRuntime MreRuntime;
 
 typedef struct BitSet BitSet;
 typedef struct CharBitSet CharBitSet;
+
+typedef struct Symbol Symbol;
+typedef struct Lexicon Lexicon;
+typedef struct Tokenizer Tokenizer;
