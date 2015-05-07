@@ -59,6 +59,11 @@ static void free_rules(MreRules *rul)
 {
     if (!--rul->refcount)
     {
+        size_t i;
+        for (i = rul->num_states; i--; )
+        {
+            free(rul->states[i].some_gotos);
+        }
         free(rul->states);
         free(rul);
     }
@@ -69,10 +74,19 @@ void mre_runtime_destroy(MreRuntime *run)
     free(run);
 }
 
+static size_t get_goto(MreState *state, size_t ci)
+{
+    if (state->first_goto <= ci && ci <= state->last_goto)
+    {
+        return state->some_gotos[ci - state->first_goto];
+    }
+    return 0;
+}
+
 void mre_runtime_step(MreRuntime *run, char c)
 {
     size_t ci = (unsigned char)c;
-    size_t si = run->states->states[run->cur_state].gotos[ci];
+    size_t si = get_goto(&run->states->states[run->cur_state], ci);
     size_t sa = run->states->states[si].accept;
     run->cur_state = si;
     run->cur_len++;
@@ -84,7 +98,7 @@ void mre_runtime_step(MreRuntime *run, char c)
 }
 bool mre_runtime_hopeful(MreRuntime *run)
 {
-    return run->cur_state != 0;
+    return run->states->states[run->cur_state].some_gotos;
 }
 size_t mre_runtime_match_id(MreRuntime *run)
 {

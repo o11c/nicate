@@ -34,15 +34,15 @@ typedef struct MreRules MreRules;
 struct MreState
 {
     size_t accept;
-    /* TODO make variable-sized. */
-    size_t gotos[256];
+    unsigned char first_goto, last_goto;
+    size_t *some_gotos;
 };
 
 struct MreRules
 {
     size_t refcount;
-    size_t num_rules;
     /* TODO put character-class tables here. */
+    size_t num_states;
     MreState *states;
 };
 

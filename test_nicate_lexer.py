@@ -174,8 +174,7 @@ def test_regex_seq():
     assert t.get(True) == ('A', 'a')
     t.feed('ab')
     assert t.get(False) == ('A', 'a')
-    # TODO optimize out the need for lookahead.
-    assert t.get(True) == ('Z', 'b')
+    assert t.get(False) == ('Z', 'b')
     t.feed('aaa')
     assert t.get(False) == ('AA', 'aa')
     assert t.get(True) == ('A', 'a')

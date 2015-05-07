@@ -816,7 +816,7 @@ static void fill_chars(BitSet *current, BitSet *next, size_t num_states, CharTra
     }
 }
 
-static MreState *multi_nfa_to_dfa_impl(MultiNfa *m)
+static MreState *multi_nfa_to_dfa_impl(MultiNfa *m, size_t *rv_count)
 {
     /*
         Input:
@@ -862,6 +862,9 @@ static MreState *multi_nfa_to_dfa_impl(MultiNfa *m)
         {
             MreState *rvi;
             size_t c;
+            size_t next_gotos[256];
+            unsigned char first_goto = 255;
+            unsigned char last_goto = 0;
             if (i == rv_cap)
             {
                 size_t old_rv_bytes = rv_cap * sizeof(*rv);
@@ -883,9 +886,34 @@ static MreState *multi_nfa_to_dfa_impl(MultiNfa *m)
                 bitset_erase(next_states);
                 fill_chars(current_states, next_states, num_states, char_transitions, c);
                 fill_epsilons(next_states, num_states, num_accept, epsilon_transitions, char_transitions);
-                rvi->gotos[c] = statemap_intern(state_map, next_states);
+                next_gotos[c] = statemap_intern(state_map, next_states);
+                if (next_gotos[c])
+                {
+                    if (c < first_goto)
+                    {
+                        first_goto = c;
+                    }
+                    if (c > last_goto)
+                    {
+                        last_goto = c;
+                    }
+                }
+            }
+            rvi->first_goto = first_goto;
+            rvi->last_goto = last_goto;
+            if (first_goto == 255 && last_goto == 0)
+            {
+                rvi->some_gotos = NULL;
+            }
+            else
+            {
+                size_t num_gotos = last_goto - first_goto + 1;
+                assert (first_goto <= last_goto);
+                rvi->some_gotos = (size_t *)calloc(num_gotos, sizeof(size_t));
+                memcpy(rvi->some_gotos, &next_gotos[first_goto], num_gotos * sizeof(size_t));
             }
         }
+        *rv_count = i;
     }
 
 
@@ -912,7 +940,6 @@ MreRules *multi_nfa_to_dfa(MultiNfa *m)
 {
     MreRules *rv = (MreRules *)calloc(1, sizeof(*rv));
     rv->refcount = 1;
-    rv->num_rules = m->num_accept;
-    rv->states = multi_nfa_to_dfa_impl(m);
+    rv->states = multi_nfa_to_dfa_impl(m, &rv->num_states);
     return rv;
 }
