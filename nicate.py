@@ -34,6 +34,8 @@ def load():
             'src/fwd.h',
             'src/builder.h',
             'src/lexer.h',
+            'src/automaton.h',
+            'src/automaton-internal.h',
     ]:
         with open(fn) as f:
             x = [l for l in f if not l.startswith('#')]
@@ -232,3 +234,112 @@ class Tokenizer:
         s = b2u(nicate_ffi.buffer(b, l)[:])
         nicate_library.tokenizer_pop(t)
         return (self._py_lexicon.name(i), s)
+
+class Grammar:
+    __slots__ = ('_names', '_indices', '_num_terminals', '_num_nonterminals', '_c_grammar')
+
+    def __init__(self, terminals, nonterminals, rules):
+        terminals = list(terminals)
+        nonterminals = list(nonterminals)
+        rules = [(l, [i for i in r]) for (l, r) in rules]
+        terminal_set = set(terminals)
+        nonterminal_set = set(nonterminals)
+        assert len(terminals) == len(terminal_set)
+        assert len(nonterminals) == len(nonterminal_set)
+        assert not (terminal_set & nonterminal_set)
+
+        idx_to_names = self._names = []
+        names_to_idx = self._indices = {}
+        for e in terminals:
+            names_to_idx[e] = len(idx_to_names)
+            idx_to_names.append(e)
+        self._num_terminals = len(terminals)
+        for e in nonterminals:
+            names_to_idx[e] = len(idx_to_names)
+            idx_to_names.append(e)
+        self._num_nonterminals = len(nonterminals)
+
+        c_rules = []
+        for (l, r) in rules:
+            assert l in nonterminal_set
+            lhs = names_to_idx[l]
+            num_rhses = len(r)
+            rhses = [names_to_idx[x] for x in r]
+            c_rule = nicate_library.rule_create(lhs, num_rhses, rhses)
+            c_rules.append(c_rule)
+        self._c_grammar = nicate_library.grammar_create(len(terminals), len(nonterminals), len(c_rules), c_rules)
+
+    def __del__(self):
+        nicate_library.grammar_destroy(self._c_grammar)
+
+class RawAutomaton:
+    __slots__ = ('_py_grammar', '_c_automaton')
+
+    def __init__(self, grammar, states):
+        self._py_grammar = grammar
+        c_states = []
+        for (d, t, n) in states:
+            default = d
+            acts = [default] * grammar._num_terminals
+            for (k, v) in t.items():
+                k = grammar._indices[k]
+                acts[k] = v
+            gotos = [ERROR()] * grammar._num_nonterminals
+            for (k, v) in n.items():
+                k = grammar._indices[k]
+                gotos[k - grammar._num_terminals] = v
+            c_state = nicate_library.state_create(grammar._c_grammar, default, acts, gotos)
+            c_states.append(c_state)
+        self._c_automaton = nicate_library.automaton_create(grammar._c_grammar, len(c_states), c_states)
+
+    def __del__(self):
+        nicate_library.automaton_destroy(self._c_automaton)
+
+    def reset(self):
+        nicate_library.automaton_reset(self._c_automaton)
+
+    def feed(self, sym, data):
+        a = self._c_automaton
+        sym = self._py_grammar._indices[sym]
+        data = u2b(data)
+        rv = nicate_library.automaton_feed_term(a, sym, data, len(data))
+        return bool(rv)
+
+    def dump_trees(self):
+        trees = nicate_library.automaton_result(self._c_automaton)
+        tree_count = nicate_library.automaton_tree_count(self._c_automaton)
+        _dump_trees(0, self._py_grammar, trees, tree_count)
+
+def _dump_line(level, *args):
+    print('  ' * level, *args, sep='')
+
+def _dump_tree(level, grammar, ptr):
+    type_name = grammar._names[ptr.type]
+    while ptr.num_children == 1:
+        ptr = ptr.children
+        type_name += ' ' + grammar._names[ptr.type]
+    _dump_line(level, 'type: ', type_name)
+    if ptr.num_children:
+        _dump_line(level, 'children:')
+        _dump_trees(level + 1, grammar, ptr.children, ptr.num_children)
+    else:
+        _dump_line(level, 'token: ', repr(nicate_ffi.buffer(ptr.token, ptr.token_length)[:]))
+
+def _dump_trees(level, grammar, base, size):
+    _dump_line(level, '[')
+    for i in range(size):
+        if i:
+            _dump_line(level, ',')
+        _dump_tree(level + 1, grammar, base + i)
+    _dump_line(level, ']')
+
+def SHIFT(s):
+    return (nicate_library.SHIFT, s)
+def GOTO(s):
+    return (nicate_library.GOTO, s)
+def REDUCE(r):
+    return (nicate_library.REDUCE, r)
+def ERROR():
+    return (nicate_library.ERROR, 0)
+def ACCEPT():
+    return (nicate_library.ACCEPT, 0)

@@ -34,6 +34,7 @@ LIB_OBJECTS = \
     mre_run.o \
     mre_re.o \
     lexer.o \
+    automaton.o \
     PMurHash.o
 
 MKDIR_FIRST = @mkdir -p ${@D}
@@ -89,7 +90,6 @@ gen/%.gen.c: bin/%.x
 
 clean:
 	rm -rf bin/ obj/ lib/
-distclean: clean
 	rm -rf gen/
 
 -include obj/*.d

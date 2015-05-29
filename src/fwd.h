@@ -53,3 +53,11 @@ typedef struct CharBitSet CharBitSet;
 typedef struct Symbol Symbol;
 typedef struct Lexicon Lexicon;
 typedef struct Tokenizer Tokenizer;
+
+typedef struct Tree Tree;
+/* typedef enum ActionType ActionType; */
+typedef struct Action Action;
+typedef struct Rule Rule;
+typedef struct Grammar Grammar;
+typedef struct State State;
+typedef struct Automaton Automaton;
