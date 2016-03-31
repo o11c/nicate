@@ -40,7 +40,7 @@ def load():
     ]:
         with open(fn) as f:
             x = [l for l in f if not l.startswith('#')]
-            ffi.cdef('\n'.join(x))
+            ffi.cdef('\n'.join(x).replace(' __extension__ ', ' '))
     return ffi
 
 nicate_ffi = load()

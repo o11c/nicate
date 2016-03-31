@@ -347,7 +347,7 @@ def emit(grammar, header, source):
     c('    %(AstType)s type;')
     c('    size_t total_tokens;')
     c('    size_t num_children;')
-    c('    union { const char *raw; %(Ast)s **children; };')
+    c('    __extension__ union { const char *raw; %(Ast)s **children; };')
     c('};')
     c()
     c('static %(Ast)s %(nothing)s = {%(NOTHING)s, 0, 0, {""}};')

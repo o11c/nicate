@@ -47,16 +47,26 @@ MKDIR_FIRST = @mkdir -p ${@D}
 #        No user servicable parts beyond this point.       #
 ############################################################
 
+ifneq '$(findstring -fsanitize=address,${CC} ${CFLAGS})' ''
+$(info Special support for AddressSanitizer enabled.)
+USING_ASAN = yes
+else
+$(info Special support for AddressSanitizer disabled.)
+USING_ASAN = no
+endif
+
 override CFLAGS += -std=c89 -D_POSIX_C_SOURCE=200809L
 override CFLAGS += -MMD -MP
 override CFLAGS += -fPIC
 override CPPFLAGS += -I src/ -I gen/
 
 export LD_LIBRARY_PATH:=.:${LD_LIBRARY_PATH}
+ifeq '${USING_ASAN}' 'yes'
 $(shell echo 0 > /proc/$$PPID/coredump_filter 2>/dev/null)
 export LD_PRELOAD:=$(shell ${CC} -print-file-name=libasan.so):${LD_PRELOAD}
 export ASAN_OPTIONS=malloc_context_size=4:abort_on_error=1
 export LSAN_OPTIONS=suppressions=leak-suppressions.txt:print_suppressions=0
+endif
 
 .SUFFIXES:
 .SECONDARY:
@@ -99,5 +109,6 @@ gen/%.gen.c: bin/%.x
 clean:
 	rm -rf bin/ obj/ lib/
 	rm -rf gen/
+distclean: clean
 
 -include obj/*.d

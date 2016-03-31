@@ -169,14 +169,14 @@ struct BuildType
     /* Types can be used in a lot of ways, many involving constructing
      * a declarator, which is backwards and inside out so can't be built. */
     enum BuildTypeType type;
-    union
+    __extension__ union
     {
         /* only for BTYTY_SPEC */
         C89_AnyTypeSpecifier *ast_spec;
         /* only for BTYTY_PTR, BTYTY_ARRAY, and BTYTY_FUN */
         BuildType *target;
     };
-    union
+    __extension__ union
     {
         /* only for BTYTY_ARRAY */
         C89_OptConditionalExpression *array_size;

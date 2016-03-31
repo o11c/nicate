@@ -595,7 +595,8 @@ static void free_junk(Lr1Junk junk)
 Automaton *automaton_create_auto(Grammar *g)
 {
     Automaton *rv;
-    Lr1Junk junk = {};
+    Lr1Junk junk;
+    memset(&junk, '\0', sizeof(junk));
     junk.grammar = g;
     junk.kernels = pool_create();
     automaton_begin_lr1(&junk);

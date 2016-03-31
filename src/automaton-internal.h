@@ -40,12 +40,12 @@ struct Tree
         >=1 for nonterminals
     */
     size_t num_children;
-    union
+    __extension__ union
     {
         /*
             these are valid only if num_children == 0
         */
-        struct
+        __extension__ struct
         {
             size_t token_length;
             char *token;
@@ -53,7 +53,7 @@ struct Tree
         /*
             these are valid only if num_children > 0
         */
-        struct
+        __extension__ struct
         {
             size_t xxx_total_tokens_or_maybe_total_token_length_or_maybe_even_rule;
             Tree *children;
