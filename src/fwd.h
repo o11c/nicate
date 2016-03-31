@@ -19,6 +19,7 @@
 */
 
 
+typedef enum HashLookupPolicy HashLookupPolicy;
 typedef struct HashKey HashKey;
 typedef struct HashValue HashValue;
 typedef struct HashEntry HashEntry;

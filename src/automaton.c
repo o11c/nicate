@@ -25,21 +25,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "bitset.h"
+#include "util.h"
 
-struct Rule
-{
-    size_t lhs;
-    size_t num_rhses;
-    size_t *rhses;
-};
-
-struct Grammar
-{
-    size_t num_symbols;
-    size_t num_nonterminals;
-    size_t num_rules;
-    Rule *rules;
-};
 
 struct State
 {
@@ -87,13 +75,6 @@ struct Automaton
 };
 
 
-static void *memdup(const void *ptr, size_t size)
-{
-    void *rv = malloc(size);
-    memcpy(rv, ptr, size);
-    return rv;
-}
-
 Rule *rule_create(size_t lhs, size_t num_rhses, size_t *rhses)
 {
     Rule rv;
@@ -109,6 +90,30 @@ Grammar *grammar_create(size_t num_symbols, size_t num_nonterminals, size_t num_
 {
     size_t i;
     Grammar rv;
+    rv.rules_by_nonterminal = (size_t *)calloc(num_nonterminals, sizeof(size_t));
+    {
+        size_t prev_nonterminal = (size_t)-1;
+        BitSet *seen_nonterminals = bitset_create(num_nonterminals);
+        if (!num_rules || rules[0]->lhs != num_symbols)
+            abort();
+        bitset_set(seen_nonterminals, num_symbols - num_symbols);
+        i = 0;
+        rv.rules_by_nonterminal[num_symbols - num_symbols] = i;
+        for (i = 1; i < num_rules; ++i)
+        {
+            size_t cur_nonterminal = rules[i]->lhs;
+            if (cur_nonterminal == prev_nonterminal)
+                continue;
+            if (bitset_test(seen_nonterminals, cur_nonterminal - num_symbols))
+                abort();
+            bitset_set(seen_nonterminals, cur_nonterminal - num_symbols);
+            rv.rules_by_nonterminal[cur_nonterminal - num_symbols] = i;
+            prev_nonterminal = cur_nonterminal;
+        }
+        if (!bitset_all(seen_nonterminals))
+            abort();
+        bitset_destroy(seen_nonterminals);
+    }
     rv.num_symbols = num_symbols;
     rv.num_nonterminals = num_nonterminals;
     rv.num_rules = num_rules;
@@ -128,6 +133,7 @@ void grammar_destroy(Grammar *g)
     {
         free(g->rules[i].rhses);
     }
+    free(g->rules_by_nonterminal);
     free(g->rules);
     free(g);
 }

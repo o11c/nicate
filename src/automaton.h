@@ -48,6 +48,7 @@ void grammar_destroy(Grammar *g);
 State *state_create(Grammar *g, Action def, Action *term_acts, Action *nonterm_acts);
 
 Automaton *automaton_create(Grammar *g, size_t num_states, State **states);
+Automaton *automaton_create_auto(Grammar *g);
 void automaton_destroy(Automaton *a);
 void automaton_reset(Automaton *a);
 

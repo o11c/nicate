@@ -62,4 +62,22 @@ struct Tree
 };
 
 
+struct Grammar
+{
+    size_t num_symbols;
+    size_t num_nonterminals;
+    size_t num_rules;
+    Rule *rules;
+    size_t *rules_by_nonterminal;
+};
+
+
+struct Rule
+{
+    size_t lhs;
+    size_t num_rhses;
+    size_t *rhses;
+};
+
+
 size_t automaton_tree_count(Automaton *a);

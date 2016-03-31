@@ -85,7 +85,7 @@ void pool_free(Pool *pool, PoolFree free_func, void *ptr)
 const void *pool_intern(Pool *pool, const void *str, size_t len)
 {
     HashKey key = {(unsigned char *)(void *)str, len};
-    HashEntry *entry = map_entry(pool->interns, key);
+    HashEntry *entry = map_entry(pool->interns, key, SEARCH_OR_INSERT);
     /* value is not used */
     return entry->key.data;
 }
@@ -95,7 +95,7 @@ const char *pool_intern_string(Pool *pool, const char *str)
     return (const char *)pool_intern(pool, str, strlen(str) + 1);
 }
 
-const void *pool_intern_map(Pool *pool, PoolTransform transform, const void *str, size_t len)
+const void *pool_intern_map(Pool *pool, PoolTransform transform, const void *str, size_t len, void *context)
 {
     struct
     {
@@ -106,10 +106,10 @@ const void *pool_intern_map(Pool *pool, PoolTransform transform, const void *str
         (str = pool_intern(pool, str, len)),
     };
     HashKey key = {(unsigned char *)&new_key, sizeof(new_key)};
-    HashEntry *entry = map_entry(pool->transforms, key);
+    HashEntry *entry = map_entry(pool->transforms, key, SEARCH_OR_INSERT);
     if (!entry->value.ptr)
     {
-        entry->value.ptr = transform(pool, str, len);
+        entry->value.ptr = transform(pool, str, len, context);
     }
     return entry->value.ptr;
 }

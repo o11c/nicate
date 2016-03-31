@@ -885,27 +885,29 @@ static char *really_do_quote(const char *s, size_t l, char q)
     return m;
 }
 
-static void *transform_single_quote(Pool *pool, const void *str, size_t len)
+static void *transform_single_quote(Pool *pool, const void *str, size_t len, void *context)
 {
     void *rv = really_do_quote((const char *)str, len, '\'');
+    (void)context;
     pool_free(pool, free, rv);
     return rv;
 }
-static void *transform_double_quote(Pool *pool, const void *str, size_t len)
+static void *transform_double_quote(Pool *pool, const void *str, size_t len, void *context)
 {
     void *rv = really_do_quote((const char *)str, len, '"');
+    (void)context;
     pool_free(pool, free, rv);
     return rv;
 }
 
 static const char *pool_single_quote(Pool *pool, const char *str, size_t len)
 {
-    return (const char *)pool_intern_map(pool, transform_single_quote, str, len);
+    return (const char *)pool_intern_map(pool, transform_single_quote, str, len, NULL);
 }
 
 static const char *pool_double_quote(Pool *pool, const char *str, size_t len)
 {
-    return (const char *)pool_intern_map(pool, transform_double_quote, str, len);
+    return (const char *)pool_intern_map(pool, transform_double_quote, str, len, NULL);
 }
 
 

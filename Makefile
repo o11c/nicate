@@ -1,4 +1,4 @@
-#   Copyright © 2015 Ben Longbons
+#   Copyright © 2015-2016 Ben Longbons
 #
 #   This file is part of Nicate.
 #
@@ -20,6 +20,8 @@ CFLAGS = -g -O2 ${WARNINGS}
 CPPFLAGS =
 LDFLAGS =
 LDLIBS =
+TEST_WRAPPER =
+PYTEST_ARGS =
 
 WARNINGS = -Werror -Wall -Wextra -Wformat -Wunused -Wc++-compat -Wmissing-declarations -Wredundant-decls
 
@@ -35,6 +37,8 @@ LIB_OBJECTS = \
     mre_re.o \
     lexer.o \
     automaton.o \
+    automaton_auto.o \
+    util.o \
     PMurHash.o
 
 MKDIR_FIRST = @mkdir -p ${@D}
@@ -60,7 +64,7 @@ export LSAN_OPTIONS=suppressions=leak-suppressions.txt:print_suppressions=0
 
 default: hello.gen.run hello2.gen.run obj/gnu-c.gen.o
 test: default
-	./test_nicate.py
+	${TEST_WRAPPER} ./test_nicate.py ${PYTEST_ARGS}
 
 bin/hello.x: obj/hello.o lib/libnicate.so
 lib/libnicate.so: $(addprefix obj/,${LIB_OBJECTS})
@@ -70,7 +74,7 @@ gen/hello2.gen.c: lib/libnicate.so nicate.py
 
 lib/lib%.so: obj/%.o
 	$(MKDIR_FIRST)
-	${CC} -shared ${LDFLAGS} $^ ${LDLIBS} -o $@
+	${CC} -Wl,--no-undefined -shared ${LDFLAGS} $^ ${LDLIBS} -o $@
 bin/%.x: obj/%.o
 	$(MKDIR_FIRST)
 	${CC} ${LDFLAGS} $^ ${LDLIBS} -o $@

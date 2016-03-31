@@ -20,7 +20,7 @@ import nicate
 from nicate import SHIFT, GOTO, REDUCE, ERROR, ACCEPT
 
 
-def test_terminals():
+def example1():
     inputs = [
             '0 ;',
             '0 ; 1 ; 2 ;',
@@ -104,6 +104,12 @@ def test_terminals():
             ('prim', ['LIT']),
             ('prim', ['(', 'cmp', ')']),
     ]
+    return inputs, terminals, nonterminals, rules
+
+
+def test_terminals_manual():
+    inputs, terminals, nonterminals, rules = example1()
+
     states = [
             # 0
             (
@@ -478,7 +484,35 @@ def test_terminals():
             ),
     ]
     grammar = nicate.Grammar(terminals, nonterminals, rules)
-    automaton = nicate.RawAutomaton(grammar, states)
+    automaton = nicate.Automaton(grammar, states)
+
+    for i in inputs:
+        for x in i.split():
+            sym, val = pair(x)
+            b = automaton.feed(sym, val)
+            assert b
+        if True:
+            sym, val = ('$end', '')
+            b = automaton.feed(sym, val)
+            assert b
+        automaton.reset()
+
+    b = automaton.feed('$end', '')
+    assert not b
+    automaton.reset()
+
+    b = automaton.feed('LIT', '0')
+    assert b
+    b = automaton.feed('$end', '')
+    assert not b
+    automaton.reset()
+
+
+def test_terminals_auto():
+    inputs, terminals, nonterminals, rules = example1()
+
+    grammar = nicate.Grammar(terminals, nonterminals, rules)
+    automaton = nicate.Automaton(grammar)
 
     for i in inputs:
         for x in i.split():

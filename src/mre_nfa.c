@@ -26,6 +26,7 @@
 #include "bitset.h"
 #include "hashmap.h"
 #include "pool.h"
+#include "util.h"
 
 
 /* These numbers are specially chosen and MultiNfa will break if changed. */
@@ -95,14 +96,14 @@ static void nfa_add_epsilon(Nfa *nfa, size_t from, size_t to)
 {
     NfaEpsilonKey str = {from, to};
     HashKey key = {(unsigned char *)&str, sizeof(str)};
-    HashEntry *entry = map_entry(nfa->epsilon_edges, key);
+    HashEntry *entry = map_entry(nfa->epsilon_edges, key, SEARCH_OR_INSERT);
     (void)entry;
 }
 static void nfa_add_char(Nfa *nfa, size_t from, size_t to, char ch)
 {
     NfaCharKey str = {from, (unsigned char)ch, to};
     HashKey key = {(unsigned char *)&str, sizeof(str)};
-    HashEntry *entry = map_entry(nfa->character_edges, key);
+    HashEntry *entry = map_entry(nfa->character_edges, key, SEARCH_OR_INSERT);
     (void)entry;
 }
 static void do_merge_epsilon(HashMap *dst, HashMap *src, size_t off)
@@ -116,7 +117,7 @@ static void do_merge_epsilon(HashMap *dst, HashMap *src, size_t off)
         ekey.from += off;
         ekey.to += off;
         key.data = (unsigned char *)&ekey;
-        (void)map_entry(dst, key);
+        (void)map_entry(dst, key, SEARCH_OR_INSERT);
         /* Remember we don't do values here. */
     }
 }
@@ -131,7 +132,7 @@ static void do_merge_char(HashMap *dst, HashMap *src, size_t off)
         ckey.from += off;
         ckey.to += off;
         key.data = (unsigned char *)&ckey;
-        (void)map_entry(dst, key);
+        (void)map_entry(dst, key, SEARCH_OR_INSERT);
         /* Remember we don't do values here. */
     }
 }
@@ -144,10 +145,11 @@ static size_t nfa_merge(Nfa *nfa, Nfa *inner)
     return rv;
 }
 
-static void *transform_text(Pool *pool, const void *str, size_t len)
+static void *transform_text(Pool *pool, const void *str, size_t len, void *context)
 {
     Nfa *rv = nfa_alloc(pool);
     const char *s = (const char *)str;
+    (void)context;
     if (!len)
     {
         nfa_add_epsilon(rv, NFA_START, NFA_ACCEPT);
@@ -166,11 +168,12 @@ static void *transform_text(Pool *pool, const void *str, size_t len)
     }
     return rv;
 }
-static void *transform_class(Pool *pool, const void *str, size_t len)
+static void *transform_class(Pool *pool, const void *str, size_t len, void *context)
 {
     CharBitSet *cbs = (CharBitSet *)str;
     Nfa *rv = nfa_alloc(pool);
     size_t i;
+    (void)context;
     assert (sizeof(*cbs) == len);
     for (i = 0; i < 256; ++i)
     {
@@ -181,35 +184,38 @@ static void *transform_class(Pool *pool, const void *str, size_t len)
     }
     return rv;
 }
-static void *transform_alt(Pool *pool, const void *str, size_t len)
+static void *transform_alt(Pool *pool, const void *str, size_t len, void *context)
 {
     Nfa *rv = nfa_alloc(pool);
     NfaPair p = (assert (len == sizeof(p)), *(NfaPair *)str);
     size_t a_offset = nfa_merge(rv, p.a);
     size_t b_offset = nfa_merge(rv, p.b);
+    (void)context;
     nfa_add_epsilon(rv, NFA_START, a_offset + NFA_START);
     nfa_add_epsilon(rv, NFA_START, b_offset + NFA_START);
     nfa_add_epsilon(rv, a_offset + NFA_ACCEPT, NFA_ACCEPT);
     nfa_add_epsilon(rv, b_offset + NFA_ACCEPT, NFA_ACCEPT);
     return rv;
 }
-static void *transform_cat(Pool *pool, const void *str, size_t len)
+static void *transform_cat(Pool *pool, const void *str, size_t len, void *context)
 {
     Nfa *rv = nfa_alloc(pool);
     NfaPair p = (assert (len == sizeof(p)), *(NfaPair *)str);
     size_t left_offset = nfa_merge(rv, p.a);
     size_t right_offset = nfa_merge(rv, p.b);
+    (void)context;
     nfa_add_epsilon(rv, NFA_START, left_offset + NFA_START);
     nfa_add_epsilon(rv, left_offset + NFA_ACCEPT, right_offset + NFA_START);
     nfa_add_epsilon(rv, right_offset + NFA_ACCEPT, NFA_ACCEPT);
     return rv;
 }
 /* TODO figure out which of these should be kept */
-static void *transform_opt(Pool *pool, const void *str, size_t len)
+static void *transform_opt(Pool *pool, const void *str, size_t len, void *context)
 {
     Nfa *rv = nfa_alloc(pool);
     Nfa *inner = (assert (len == sizeof(inner)), *(Nfa **)str);
     size_t inner_offset = nfa_merge(rv, inner);
+    (void)context;
     /*
         Snew -----> Anew
           |           ^
@@ -221,11 +227,12 @@ static void *transform_opt(Pool *pool, const void *str, size_t len)
     nfa_add_epsilon(rv, inner_offset + NFA_ACCEPT, NFA_ACCEPT);
     return rv;
 }
-static void *transform_star(Pool *pool, const void *str, size_t len)
+static void *transform_star(Pool *pool, const void *str, size_t len, void *context)
 {
     Nfa *rv = nfa_alloc(pool);
     Nfa *inner = (assert (len == sizeof(inner)), *(Nfa **)str);
     size_t inner_offset = nfa_merge(rv, inner);
+    (void)context;
     /*
         Snew -----> Anew
           |           ^
@@ -240,11 +247,12 @@ static void *transform_star(Pool *pool, const void *str, size_t len)
     nfa_add_epsilon(rv, inner_offset + NFA_ACCEPT, NFA_ACCEPT);
     return rv;
 }
-static void *transform_plus(Pool *pool, const void *str, size_t len)
+static void *transform_plus(Pool *pool, const void *str, size_t len, void *context)
 {
     Nfa *rv = nfa_alloc(pool);
     Nfa *inner = (assert (len == sizeof(inner)), *(Nfa **)str);
     size_t inner_offset = nfa_merge(rv, inner);
+    (void)context;
     /*
         Snew        Anew
           |           ^
@@ -304,7 +312,7 @@ Nfa *nfa_class_compl(Pool *pool, const char *str)
 }
 Nfa *nfa_text_slice(Pool *pool, const char *str, size_t len)
 {
-    return (Nfa *)pool_intern_map(pool, transform_text, str, len);
+    return (Nfa *)pool_intern_map(pool, transform_text, str, len, NULL);
 }
 Nfa *nfa_class_slice(Pool *pool, const char *str, size_t len)
 {
@@ -319,33 +327,33 @@ Nfa *nfa_class_compl_slice(Pool *pool, const char *str, size_t len)
 }
 Nfa *nfa_class_set(Pool *pool, CharBitSet *cbs)
 {
-    return (Nfa *)pool_intern_map(pool, transform_class, cbs, sizeof(*cbs));
+    return (Nfa *)pool_intern_map(pool, transform_class, cbs, sizeof(*cbs), NULL);
 }
 Nfa *nfa_alt(Pool *pool, Nfa *a, Nfa *b)
 {
     NfaPair p;
     p.a = a;
     p.b = b;
-    return (Nfa *)pool_intern_map(pool, transform_alt, &p, sizeof(p));
+    return (Nfa *)pool_intern_map(pool, transform_alt, &p, sizeof(p), NULL);
 }
 Nfa *nfa_cat(Pool *pool, Nfa *left, Nfa *right)
 {
     NfaPair p;
     p.a = left;
     p.b = right;
-    return (Nfa *)pool_intern_map(pool, transform_cat, &p, sizeof(p));
+    return (Nfa *)pool_intern_map(pool, transform_cat, &p, sizeof(p), NULL);
 }
 Nfa *nfa_opt(Pool *pool, Nfa *inner)
 {
-    return (Nfa *)pool_intern_map(pool, transform_opt, &inner, sizeof(inner));
+    return (Nfa *)pool_intern_map(pool, transform_opt, &inner, sizeof(inner), NULL);
 }
 Nfa *nfa_star(Pool *pool, Nfa *inner)
 {
-    return (Nfa *)pool_intern_map(pool, transform_star, &inner, sizeof(inner));
+    return (Nfa *)pool_intern_map(pool, transform_star, &inner, sizeof(inner), NULL);
 }
 Nfa *nfa_plus(Pool *pool, Nfa *inner)
 {
-    return (Nfa *)pool_intern_map(pool, transform_plus, &inner, sizeof(inner));
+    return (Nfa *)pool_intern_map(pool, transform_plus, &inner, sizeof(inner), NULL);
 }
 
 
@@ -707,7 +715,7 @@ static size_t statemap_intern(StateMap *sm, BitSet *bs)
 {
     HashKey key = bitset_as_key(bs);
     size_t old_size = map_size(sm->hash);
-    HashEntry *entry = map_entry(sm->hash, key);
+    HashEntry *entry = map_entry(sm->hash, key, SEARCH_OR_INSERT);
     size_t new_size = map_size(sm->hash);
     if (old_size != new_size)
     {
@@ -909,8 +917,7 @@ static MreState *multi_nfa_to_dfa_impl(MultiNfa *m, size_t *rv_count)
             {
                 size_t num_gotos = last_goto - first_goto + 1;
                 assert (first_goto <= last_goto);
-                rvi->some_gotos = (size_t *)calloc(num_gotos, sizeof(size_t));
-                memcpy(rvi->some_gotos, &next_gotos[first_goto], num_gotos * sizeof(size_t));
+                rvi->some_gotos = (size_t *)memdup(&next_gotos[first_goto], num_gotos * sizeof(size_t));
             }
         }
         *rv_count = i;

@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include "PMurHash.h"
+#include "util.h"
 
 
 #define GROW 3/4
@@ -82,7 +83,7 @@ static uint32_t hash(HashKey key)
     return PMurHash32(0U, key.data, (int)key.len);
 }
 
-HashEntry *map_entry(HashMap *map, HashKey key)
+HashEntry *map_entry(HashMap *map, HashKey key, HashLookupPolicy policy)
 {
     uint32_t h = hash(key);
     HashChain *bucket = map->buckets[h % map->num_buckets];
@@ -92,11 +93,15 @@ HashEntry *map_entry(HashMap *map, HashKey key)
         {
             if (memcmp(bucket->entry.key.data, key.data, key.len) == 0)
             {
+                if (policy == INSERT_ONLY)
+                    abort();
                 return &bucket->entry;
             }
         }
         bucket = bucket->next;
     }
+    if (policy == SEARCH_ONLY)
+        return NULL;
     ++map->num_entries;
     if (map->num_entries > map->num_buckets * GROW)
     {
@@ -109,19 +114,46 @@ HashEntry *map_entry(HashMap *map, HashKey key)
         map->num_buckets = new_num_buckets;
         for (i = 0; i < old_num_buckets; ++i)
         {
+            /*
+                Since the number of buckets always doubles, it is always
+                a power of two, so split the hash chain into two chains
+                based on the next bit.
+            */
             HashChain **old_chain = &new_buckets[i];
             HashChain **new_chain = &new_buckets[old_num_buckets + i];
             while (*old_chain)
             {
                 if ((*old_chain)->hash & old_num_buckets)
                 {
+                    /*
+                        Current element needs to be moved.
+                        Note map_pop() requires the invariant that the most
+                        recently added element (including after previous
+                        pops) is always the top of the bucket, so we have
+                        to preserve order rather than swapping.
+
+                        O_o -> N_n -> O_n...
+                        N_o -> null
+
+                        O_o -> O_n...
+                        N_o -> N_n -> null
+                    */
                     HashChain *old_next = (*old_chain)->next;
-                    (*old_chain)->next = *new_chain;
+                    assert (*new_chain == NULL);
                     *new_chain = *old_chain;
                     *old_chain = old_next;
+                    new_chain = &(*new_chain)->next;
+                    /* Will be overwritten except for the last. */
+                    *new_chain = NULL;
                 }
                 else
                 {
+                    /*
+                        Current element is already in the right bucket,
+                        so just advance. Trivially maintains the invariant.
+
+                        O_o -> O_n...
+                    */
                     old_chain = &(*old_chain)->next;
                 }
             }
@@ -130,14 +162,30 @@ HashEntry *map_entry(HashMap *map, HashKey key)
     bucket = (HashChain *)calloc(1, sizeof(HashChain));
     bucket->next = map->buckets[h % map->num_buckets];
     bucket->iter = map->iter;
-    bucket->entry.key.data = (unsigned char *)malloc(key.len);
-    memcpy(bucket->entry.key.data, key.data, key.len);
+    bucket->entry.key.data = (unsigned char *)memdup(key.data, key.len);
     bucket->entry.key.len = key.len;
     bucket->entry.value.ptr = NULL;
     bucket->hash = h;
     map->buckets[h % map->num_buckets] = bucket;
     map->iter = bucket;
     return &bucket->entry;
+}
+
+HashValue map_pop(HashMap *map)
+{
+    HashValue rv = {NULL};
+    if (map->iter)
+    {
+        HashChain *e = map->iter;
+        HashChain **bucket = &map->buckets[e->hash % map->num_buckets];
+        rv = e->entry.value;
+        free(e->entry.key.data);
+        map->iter = e->iter;
+        assert (*bucket == e);
+        *bucket = e->next;
+        --map->num_entries;
+    }
+    return rv;
 }
 
 HashIterator *map_first(HashMap *map)

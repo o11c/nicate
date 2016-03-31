@@ -279,11 +279,14 @@ class Grammar:
     def __del__(self):
         nicate_library.grammar_destroy(self._c_grammar)
 
-class RawAutomaton:
+class Automaton:
     __slots__ = ('_py_grammar', '_c_automaton')
 
-    def __init__(self, grammar, states):
+    def __init__(self, grammar, states=None):
         self._py_grammar = grammar
+        if states is None:
+            self._c_automaton = nicate_library.automaton_create_auto(grammar._c_grammar)
+            return
         c_states = []
         for (d, t, n) in states:
             default = d

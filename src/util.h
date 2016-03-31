@@ -23,36 +23,4 @@
 #include "fwd.h"
 
 
-enum HashLookupPolicy
-{
-    SEARCH_OR_INSERT,
-    SEARCH_ONLY,
-    INSERT_ONLY,
-};
-
-struct HashKey
-{
-    unsigned char *data;
-    size_t len;
-};
-
-struct HashValue
-{
-    void *ptr;
-};
-
-struct HashEntry
-{
-    HashKey key;
-    HashValue value;
-};
-
-HashMap *map_create(void);
-void map_destroy(HashMap *map);
-HashEntry *map_entry(HashMap *map, HashKey key, HashLookupPolicy policy);
-HashValue map_pop(HashMap *map);
-
-HashIterator *map_first(HashMap *map);
-HashIterator *map_next(HashIterator *it);
-HashEntry *map_deref(HashIterator *it);
-size_t map_size(HashMap *map);
+void *memdup(const void *ptr, size_t size);

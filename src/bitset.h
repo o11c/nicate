@@ -31,6 +31,12 @@ struct CharBitSet
 
 BitSet *bitset_create(size_t bits);
 void bitset_destroy(BitSet *b);
+size_t bitset_bits(BitSet *b);
+size_t bitset_refcount(BitSet *b);
+
+BitSet *bitset_incref(BitSet *b);
+BitSet *bitset_copy(BitSet *b);
+BitSet *bitset_unique(BitSet *b);
 
 void bitset_set(BitSet *b, size_t i);
 void bitset_unset(BitSet *b, size_t i);
@@ -39,6 +45,12 @@ bool bitset_test(BitSet *b, size_t i);
 void bitset_invert(BitSet *b);
 void bitset_erase(BitSet *b);
 bool bitset_any(BitSet *b);
+bool bitset_all(BitSet *b);
+
+bool bitset_equals(BitSet *l, BitSet *r);
+void bitset_and_eq(BitSet *l, BitSet *r);
+void bitset_or_eq(BitSet *l, BitSet *r);
+void bitset_xor_eq(BitSet *l, BitSet *r);
 
 HashKey bitset_as_key(BitSet *b);
 
