@@ -1,0 +1,5 @@
+leak:/gcc
+leak:/ld
+leak:/libbfd
+leak:/collect2
+leak:/python

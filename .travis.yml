@@ -1,3 +1,4 @@
+sudo: false
 language: c
 
 compiler:
@@ -15,10 +16,15 @@ notifications:
     on_failure: always
     use_notice: true
 
+addons:
+  apt:
+    packages:
+      - python3
+      - python3-dev
+
 install:
   - export PATH=$HOME/.local/bin:$PATH
-  - sudo apt-get install python3 python3-dev
-  - wget https://bootstrap.pypa.io/get-pip.py
+  - wget https://bootstrap.pypa.io/3.2/get-pip.py
   - python3 get-pip.py --user
   - pip3 install --user cffi pytest
 script:

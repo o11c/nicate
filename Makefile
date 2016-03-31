@@ -49,6 +49,10 @@ override CFLAGS += -fPIC
 override CPPFLAGS += -I src/ -I gen/
 
 export LD_LIBRARY_PATH:=.:${LD_LIBRARY_PATH}
+$(shell echo 0 > /proc/$$PPID/coredump_filter 2>/dev/null)
+export LD_PRELOAD:=$(shell ${CC} -print-file-name=libasan.so):${LD_PRELOAD}
+export ASAN_OPTIONS=malloc_context_size=4:abort_on_error=1
+export LSAN_OPTIONS=suppressions=leak-suppressions.txt:print_suppressions=0
 
 .SUFFIXES:
 .SECONDARY:

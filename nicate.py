@@ -28,6 +28,7 @@ def b2u(b):
 def load():
     import sys
     assert sys.version_info[0] >= 3
+
     ffi = cffi.FFI()
     ffi.cdef('typedef uint64_t uintmax_t;')
     for fn in [
@@ -100,9 +101,15 @@ def desc_ty(ty):
             else:
                 assert False, name
             return name
+        elif type(ty.totype) == cffi.model.PrimitiveType:
+            if ty.totype.name == 'char':
+                return 'str'
+            assert False, ty.name
     assert False, '%s of %s' % (ty, type(ty))
 
 def make_fun(sk, lk, v):
+    if isinstance(v, tuple) and len(v) == 2:
+        v = v[0]
     r = v.result
     a = v.args
     rd = desc_ty(r)

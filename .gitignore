@@ -5,3 +5,4 @@ bin/*.x
 obj/*.d
 gen/*.gen.*
 /__pycache__/
+/.cache/
