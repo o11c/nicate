@@ -1,4 +1,5 @@
 leak:/gcc
+leak:/clang
 leak:/ld
 leak:/libbfd
 leak:/collect2

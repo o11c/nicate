@@ -55,6 +55,14 @@ $(info Special support for AddressSanitizer disabled.)
 USING_ASAN = no
 endif
 
+ifneq '$(findstring clang,${CC} ${CFLAGS})' ''
+$(info Special support for Clang enabled.)
+USING_CLANG = yes
+else
+$(info Special support for Clang disabled.)
+USING_CLANG = no
+endif
+
 override CFLAGS += -std=c89 -D_POSIX_C_SOURCE=200809L
 override CFLAGS += -MMD -MP
 override CFLAGS += -fPIC
@@ -62,10 +70,17 @@ override CPPFLAGS += -I src/ -I gen/
 
 export LD_LIBRARY_PATH:=.:${LD_LIBRARY_PATH}
 ifeq '${USING_ASAN}' 'yes'
+ifeq '${USING_CLANG}' 'yes'
+override CC += -shared-libasan
+$(warning Clang and shared ASAN do not work together very well.)
+endif
 $(shell echo 0 > /proc/$$PPID/coredump_filter 2>/dev/null)
 export LD_PRELOAD:=$(shell ${CC} -print-file-name=libasan.so):${LD_PRELOAD}
 export ASAN_OPTIONS=malloc_context_size=4:abort_on_error=1
 export LSAN_OPTIONS=suppressions=leak-suppressions.txt:print_suppressions=0
+else
+TEST_WRAPPER = valgrind
+override LDFLAGS += -Wl,--no-undefined
 endif
 
 .SUFFIXES:
@@ -84,7 +99,7 @@ gen/hello2.gen.c: lib/libnicate.so nicate.py
 
 lib/lib%.so: obj/%.o
 	$(MKDIR_FIRST)
-	${CC} -Wl,--no-undefined -shared ${LDFLAGS} $^ ${LDLIBS} -o $@
+	${CC} -shared ${LDFLAGS} $^ ${LDLIBS} -o $@
 bin/%.x: obj/%.o
 	$(MKDIR_FIRST)
 	${CC} ${LDFLAGS} $^ ${LDLIBS} -o $@
