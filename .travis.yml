@@ -1,10 +1,6 @@
 sudo: false
 language: c
 
-compiler:
-  - gcc
-  - clang
-
 notifications:
   email:
     on_success: change
@@ -16,16 +12,187 @@ notifications:
     on_failure: always
     use_notice: true
 
-addons:
-  apt:
-    packages:
-      - python3
-      - python3-dev
-
 install:
+  - make --version
+  - $REAL_CC --version
+  - $REAL_CXX --version
   - export PATH=$HOME/.local/bin:$PATH
   - wget https://bootstrap.pypa.io/3.2/get-pip.py
   - python3 get-pip.py --user
   - pip3 install --user cffi pytest
 script:
-  - make test CC=$CC
+  - make test CC=$REAL_CC CXX=$REAL_CXX
+
+matrix:
+  fast-finish: true
+  include:
+    - compiler: clang
+      # package in precise, predates installation of clang-X.Y binaries
+      env: REAL_CC=/usr/bin/clang REAL_CXX=/usr/bin/clang++
+      addons:
+        apt:
+          packages:
+            - clang-3.3
+            # matches system libstdc++ on precise
+            - libstdc++6-4.6-dbg
+            - valgrind
+            - gdb
+            - python3-dev
+    - compiler: clang
+      # package in precise, predates installation of clang-X.Y binaries
+      env: REAL_CC=/usr/bin/clang REAL_CXX=/usr/bin/clang++
+      addons:
+        apt:
+          packages:
+            - clang-3.4
+            # matches system libstdc++ on precise
+            - libstdc++6-4.6-dbg
+            - valgrind
+            - gdb
+            - python3-dev
+    - compiler: clang
+      env: REAL_CC=clang-3.5 REAL_CXX=clang++-3.5
+      addons:
+        apt:
+          sources:
+            - llvm-toolchain-precise-3.5
+            # needed for libstdc++ headers
+            - ubuntu-toolchain-r-test
+          packages:
+            - clang-3.5
+            # matches system libstdc++ on precise
+            - libstdc++6-4.6-dbg
+            - valgrind
+            - gdb
+            - python3-dev
+    - compiler: clang
+      env: REAL_CC=clang-3.6     REAL_CXX=clang++-3.6
+      addons:
+        apt:
+          sources:
+            - llvm-toolchain-precise-3.6
+            # needed for libstdc++ headers
+            - ubuntu-toolchain-r-test
+          packages:
+            - clang-3.6
+            # matches system libstdc++ on precise
+            - libstdc++6-4.6-dbg
+            - valgrind
+            - gdb
+            - python3-dev
+    - compiler: clang
+      env: REAL_CC=clang-3.7     REAL_CXX=clang++-3.7
+      addons:
+        apt:
+          sources:
+            - llvm-toolchain-precise-3.7
+            # needed for libstdc++ headers
+            - ubuntu-toolchain-r-test
+          packages:
+            - clang-3.7
+            # matches system libstdc++ on precise
+            - libstdc++6-4.6-dbg
+            - valgrind
+            - gdb
+            - python3-dev
+    - compiler: clang
+      env: REAL_CC=clang-3.8     REAL_CXX=clang++-3.8
+      addons:
+        apt:
+          sources:
+            - llvm-toolchain-precise-3.8
+            # needed for libstdc++ headers
+            - ubuntu-toolchain-r-test
+          packages:
+            - clang-3.8
+            # matches system libstdc++ on precise
+            - libstdc++6-4.6-dbg
+            - valgrind
+            - gdb
+            - python3-dev
+    # TODO add clang-3.9 once it is released and added to the whitelist.
+    - compiler: gcc
+      env: REAL_CC=gcc-4.4     REAL_CXX=g++-4.4
+      addons:
+        apt:
+          # package in precise
+          packages:
+            - g++-4.4
+            # matches system libstdc++ on precise
+            - libstdc++6-4.6-dbg
+            - valgrind
+            - gdb
+            - python3-dev
+    - compiler: gcc
+      env: REAL_CC=gcc-4.5     REAL_CXX=g++-4.5
+      addons:
+        apt:
+          # package in precise
+          packages:
+            - g++-4.5
+            # matches system libstdc++ on precise
+            - libstdc++6-4.6-dbg
+            - valgrind
+            - gdb
+            - python3-dev
+    - compiler: gcc
+      env: REAL_CC=gcc-4.6     REAL_CXX=g++-4.6
+      addons:
+        apt:
+          # package in precise
+          packages:
+            - g++-4.6
+            # matches system libstdc++ on precise
+            - libstdc++6-4.6-dbg
+            - valgrind
+            - gdb
+            - python3-dev
+    - compiler: gcc
+      env: REAL_CC=gcc-4.7     REAL_CXX=g++-4.7
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-4.7
+            - libstdc++6-4.7-dbg
+            - valgrind
+            - gdb
+            - python3-dev
+    - compiler: gcc
+      env: REAL_CC=gcc-4.8     REAL_CXX=g++-4.8
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-4.8
+            - libstdc++6-4.8-dbg
+            - valgrind
+            - gdb
+            - python3-dev
+    - compiler: gcc
+      env: REAL_CC=gcc-4.9     REAL_CXX=g++-4.9
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-4.9
+            - libstdc++6-4.9-dbg
+            - valgrind
+            - gdb
+            - python3-dev
+    - compiler: gcc
+      env: REAL_CC=gcc-5     REAL_CXX=g++-5
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-5
+            - libstdc++6-5-dbg
+            - valgrind
+            - gdb
+            - python3-dev
+    # TODO add gcc-6 once it is released and added to the whitelist.
