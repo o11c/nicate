@@ -57,7 +57,12 @@ keyword _Thread_local
 keyword _Noreturn
 keyword _Bool
 keyword _Complex
-keyword _Atomic
+# Since we don't have shift-reduce conflict resolution yet,
+# someone else needs to tell us.
+# Note that _Atomic as a specifier is pointless, you can always
+# modifier your code to use the qualifier.
+keyword _Atomic_as_qualifier
+keyword _Atomic_as_specifier
 keyword _Alignas
 keyword asm
 keyword _Generic
@@ -148,6 +153,7 @@ symbol ; semicolon
 # symbol # hash
 # symbol ## hash-hash
 
+start translation-unit
 
 translation-unit:
     external-declarations_opt
@@ -177,7 +183,7 @@ declaration-list:
 
 init-declarator-list:
     init-declarator
-    init-declarator-list init-declarator
+    init-declarator-list , init-declarator
 
 init-declarator:
     declarator simple-asm-expr_opt attributes_opt
@@ -196,12 +202,13 @@ static-assert-declaration-no-semi:
     _Static_assert ( constant-expression , string-literal )
 
 declaration-specifiers:
+    attributes_opt declaration-specifiers-no-attributes
+declaration-specifiers-no-attributes:
     storage-class-specifier declaration-specifiers_opt
     type-specifier declaration-specifiers_opt
     type-qualifier declaration-specifiers_opt
     function-specifier declaration-specifiers_opt
     alignment-specifier declaration-specifiers_opt
-    attributes declaration-specifiers_opt
 
 storage-class-specifier:
     typedef
@@ -246,15 +253,15 @@ type-qualifier:
     const
     restrict
     volatile
-    _Atomic
+    _Atomic_as_qualifier
     address-space
 
 atomic-type-specifier:
-    _Atomic ( type-name )
+    _Atomic_as_specifier ( type-name )
 
 enum-specifier:
-    enum attributes_opt identifier_opt { enumerator-list } attributes_opt
-    enum attributes_opt identifier_opt { enumerator-list , } attributes_opt
+    enum attributes_opt identifier_opt { enumerator-list }
+    enum attributes_opt identifier_opt { enumerator-list , }
     enum attributes_opt identifier
 
 enumerator-list:
@@ -269,7 +276,7 @@ enumeration-constant:
     identifier
 
 struct-or-union-specifier:
-    struct-or-union attributes_opt identifier_opt { struct-contents_opt } attributes_opt
+    struct-or-union attributes_opt identifier_opt { struct-contents_opt }
     struct-or-union attributes_opt identifier
 
 struct-or-union:
@@ -296,9 +303,9 @@ struct-declaration:
     specifier-qualifier-list
 
 specifier-qualifier-list:
-    type-specifier specifier-qualifier-list_opt
-    type-qualifier specifier-qualifier-list_opt
-    attributes specifier-qualifier-list_opt
+    attributes
+    attributes_opt type-specifier specifier-qualifier-list_opt
+    attributes_opt type-qualifier specifier-qualifier-list_opt
 
 struct-declarator-list:
     struct-declarator
@@ -334,10 +341,8 @@ pointer:
     * type-qualifier-list_opt pointer
 
 type-qualifier-list:
-    type-qualifier
     attributes
-    type-qualifier-list type-qualifier
-    type-qualifier-list attributes
+    type-qualifier-list_opt type-qualifier attributes_opt
 
 array-declarator:
     [ type-qualifier-list_opt assignment-expression_opt ]
@@ -354,8 +359,9 @@ parameter-list:
     parameter-list , parameter-declaration
 
 parameter-declaration:
-    declaration-specifiers declarator attributes_opt
-    declaration-specifiers abstract-declarator_opt attributes_opt
+    declaration-specifiers declarator
+    declaration-specifiers abstract-declarator
+    declaration-specifiers
 #    pragma parameter-declaration
 
 identifier-list:
@@ -386,21 +392,18 @@ attributes:
     attributes_opt attribute
 
 attribute:
-    __attribute__ ( ( attribute-list ) )
+    __attribute__ ( ( attribute-list_opt ) )
 
 attribute-list:
-    attrib_opt
-    attribute-list , attrib_opt
+    attrib
+    attribute-list_opt , attrib_opt
 
 attrib:
     any-word
-    any-word ( identifier )
-    any-word ( identifier , nonempty-expr-list )
     any-word ( expr-list )
 
 any-word:
     identifier
-#    typedef-name
     storage-class-specifier
     type-specifier
     type-qualifier
@@ -464,6 +467,8 @@ label-declaration:
     __label__ identifier-list ;
 
 
+labels:
+    labels_opt label
 label:
     identifier : attributes_opt
     case constant-expression :
@@ -471,35 +476,42 @@ label:
     case constant-expression ... constant-expression :
 
 statement:
-    labeled-statement
+    labels unlabeled-statement
+unlabeled-statement:
     compound-statement
     expression-statement
-    selection-statement
-    iteration-statement
-    jump-statement
-    asm-statement
-
-labeled-statement:
-    label statement
-
-expression-statement:
-    expression_opt ;
-
-selection-statement:
     if-statement
+    if-else-statement
     switch-statement
-
-iteration-statement:
     while-statement
     do-statement
     for-statement
-
-jump-statement:
     goto identifier ;
     continue ;
     break ;
     return expression_opt ;
     goto * expression ;
+    asm-statement
+
+statement-except-if:
+    labels unlabeled-statement-except-if
+unlabeled-statement-except-if:
+    compound-statement
+    expression-statement
+    if-else-statement-except-if
+    switch-statement-except-if
+    while-statement-except-if
+    do-statement
+    for-statement-except-if
+    goto identifier ;
+    continue ;
+    break ;
+    return expression_opt ;
+    goto * expression ;
+    asm-statement
+
+expression-statement:
+    expression_opt ;
 
 
 condition:
@@ -507,14 +519,21 @@ condition:
 
 if-statement:
     if condition statement
-    if condition statement else statement
+if-else-statement:
+    if condition statement-except-if else statement
+if-else-statement-except-if:
+    if condition statement-except-if else statement-except-if
 
 
 switch-statement:
     switch ( expression ) statement
+switch-statement-except-if:
+    switch ( expression ) statement-except-if
 
 while-statement:
      while condition statement
+while-statement-except-if:
+     while condition statement-except-if
 
 do-statement:
     do statement while condition ;
@@ -522,6 +541,9 @@ do-statement:
 for-statement:
     for ( expression_opt ; expression_opt ; expression_opt ) statement
     for ( nested-declaration expression_opt ; expression_opt ) statement
+for-statement-except-if:
+    for ( expression_opt ; expression_opt ; expression_opt ) statement-except-if
+    for ( nested-declaration expression_opt ; expression_opt ) statement-except-if
 
 
 asm-statement:
@@ -632,9 +654,10 @@ cast-expression:
 
 unary-expression:
     postfix-expression
-    ++ unary-expression
-    -- unary-expression
+    ++ cast-expression
+    -- cast-expression
     unary-operator cast-expression
+    __extension__ cast-expression
     sizeof unary-expression
     sizeof ( type-name )
     __alignof__ unary-expression
@@ -648,7 +671,6 @@ unary-operator:
     -
     ~
     !
-    __extension__
     __real__
     __imag__
 

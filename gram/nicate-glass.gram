@@ -1,0 +1,210 @@
+language nicate-glass
+
+keyword break
+keyword case
+keyword const
+keyword continue
+keyword default
+keyword do
+keyword else
+keyword enum
+keyword extern
+#keyword for
+keyword fun
+keyword global
+keyword goto
+keyword if
+keyword let
+keyword return
+keyword static
+keyword struct
+keyword switch
+keyword union
+keyword while
+
+atom id
+atom literal
+
+symbol [ lbracket
+symbol ] rbracket
+symbol ( lparen
+symbol ) rparen
+symbol { lbrace
+symbol } rbrace
+symbol . dot
+symbol -> arrow
+symbol ++ incr
+symbol -- decr
+symbol & ampersand
+symbol * star
+symbol + plus
+symbol - minus
+symbol ~ tilde
+symbol ! bang
+symbol / slash
+symbol % percent
+symbol << lshift
+symbol >> rshift
+symbol < lt
+symbol > gt
+symbol <= le
+symbol >= ge
+symbol == eq
+symbol != ne
+symbol ^ caret
+symbol | pipe
+symbol && logical-and
+symbol || logical-or
+#symbol ? query
+symbol : colon
+symbol = assign
+symbol *= star-assign
+symbol /= slash-assign
+symbol %= percent-assign
+symbol += plus-assign
+symbol -= minus-assign
+symbol <<= lshift-assign
+symbol >>= rshift-assign
+symbol &= ampersand-assign
+symbol ^= caret-assign
+symbol |= pipe-assign
+symbol , comma
+symbol ; semicolon
+symbol @ at
+
+start tu
+
+tu:
+    tu_opt stmt
+attr:
+    @ id
+    @ id [ expr-list_opt ]
+stmt:
+    attr-stmt
+    noattr-stmt
+attr-stmt:
+    attr attr-stmt
+    union id maybe-struct-body
+    struct id maybe-struct-body
+    enum id maybe-enum-body
+    fun fun-sig maybe-compound-stmt
+    assign_opt ;
+    extern typed-id ;
+    const typed-id = expr ;
+    static typed-id = expr ;
+    global typed-id = expr ;
+    let typed-id ;
+    let typed-id = expr ;
+noattr-stmt:
+    id : stmt
+    default : stmt
+    case expr : stmt
+    while ( expr ) compound-stmt
+    do compound-stmt while ( expr ) ;
+    goto id ;
+    break ;
+    continue ;
+    return expr_opt ;
+    switch ( expr ) compound-stmt
+    if-or-compound-stmt
+if-or-compound-stmt:
+    compound-stmt
+    if ( expr ) compound-stmt
+    if ( expr ) compound-stmt else if-or-compound-stmt
+maybe-struct-body:
+    ;
+    { typed-id-list_opt }
+maybe-enum-body:
+    ;
+    { id-list_opt }
+fun-sig:
+    ( typed-id-list_opt ) -> expr
+maybe-compound-stmt:
+    ;
+    compound-stmt
+compound-stmt:
+    { stmt-list_opt }
+typed-id:
+    id : expr
+typed-id-list:
+    typed-id-list , typed-id
+    typed-id
+id-list:
+    id-list , id
+    id
+expr-list:
+    expr-list , expr
+    expr
+stmt-list:
+    stmt-list_opt stmt
+assign:
+    expr = assign
+    expr *= expr
+    expr /= expr
+    expr %= expr
+    expr += expr
+    expr -= expr
+    expr <<= expr
+    expr >>= expr
+    expr &= expr
+    expr ^= expr
+    expr |= expr
+    expr
+expr:
+    logical-or-expr
+mul-expr:
+    unary-expr
+    mul-expr * unary-expr
+    mul-expr / unary-expr
+    mul-expr % unary-expr
+add-expr:
+    mul-expr
+    add-expr + mul-expr
+    add-expr - mul-expr
+shift-expr:
+    add-expr
+    shift-expr << add-expr
+    shift-expr >> add-expr
+cmp-expr:
+    shift-expr
+    shift-expr < shift-expr
+    shift-expr > shift-expr
+    shift-expr <= shift-expr
+    shift-expr >= shift-expr
+    shift-expr == shift-expr
+    shift-expr != shift-expr
+bitwise-and-expr:
+    cmp-expr
+    bitwise-and-expr & cmp-expr
+bitwise-xor-expr:
+    bitwise-and-expr
+    bitwise-xor-expr ^ bitwise-and-expr
+bitwise-ior-expr:
+    bitwise-xor-expr
+    bitwise-ior-expr | bitwise-xor-expr
+logical-and-expr:
+    bitwise-ior-expr
+    logical-and-expr && bitwise-ior-expr
+logical-or-expr:
+    logical-and-expr
+    logical-or-expr || logical-and-expr
+unary-expr:
+    postfix-expr
+    ++ unary-expr
+    -- unary-expr
+    & unary-expr
+    + unary-expr
+    - unary-expr
+    ~ unary-expr
+    ! unary-expr
+postfix-expr:
+    primary-expr
+    postfix-expr [ expr-list_opt ]
+    postfix-expr ( expr-list_opt )
+    postfix-expr . id
+    postfix-expr ++
+    postfix-expr --
+primary-expr:
+    id
+    literal
+    ( expr-list_opt )

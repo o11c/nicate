@@ -91,6 +91,8 @@ symbol ; semicolon
 # symbol # hash
 # symbol ## hash-hash
 
+start translation-unit
+
 constant:
     floating-constant
     integer-constant
@@ -283,7 +285,7 @@ comma-expression:
 declaration:
     storage-class-specifier_opt specifier-qualifier-list init-declarator-list_opt ;
 multi-init-declarator-list:
-    init-declarator-list init-declarator
+    init-declarator-list , init-declarator
 init-declarator-list:
     init-declarator
     multi-init-declarator-list

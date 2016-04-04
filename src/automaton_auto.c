@@ -158,6 +158,7 @@ static void add_action(ActionList *list, Action act)
     {
         size_t new_cap = old_cap * 2 + !old_cap;
         list->actions = (Action *)realloc(list->actions, new_cap * sizeof(Action));
+        list->actions_cap = new_cap;
         if (!list->actions)
         {
             abort();

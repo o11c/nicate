@@ -87,8 +87,8 @@ endif
 .SECONDARY:
 .DELETE_ON_ERROR:
 
-default: hello.gen.run hello2.gen.run obj/gnu-c.gen.o
-test: default
+default: hello.gen.run hello2.gen.run obj/gnu-c.gen.o obj/nicate-glass.gen.o
+test: lib/libnicate.so
 	${TEST_WRAPPER} ./test_nicate.py ${PYTEST_ARGS}
 
 bin/hello.x: obj/hello.o lib/libnicate.so

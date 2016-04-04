@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#   Copyright © 2015 Ben Longbons
+#   Copyright © 2015-2016 Ben Longbons
 #
 #   This file is part of Nicate.
 #
@@ -17,11 +17,12 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import collections
 import string
 
 generated_copyright = '''
 /*
-    Copyright © 2015 Ben Longbons
+    Copyright © 2015-2016 Ben Longbons
 
     This file is part of Nicate.
 
@@ -66,6 +67,9 @@ class IdentifierCase:
             name = repr(name)
         return 'IdentifierCase(%s, <space=%r, lower=%r, upper=%r, camel=%r>)' % (name, self.space, self.lower, self.upper, self.camel)
 
+    def __eq__(self, other):
+        return (self.dash, self.visual) == (other.dash, other.visual)
+
     def __add__(self, other):
         self_dash = self.dash
         self_visual = self.visual
@@ -89,12 +93,13 @@ class IdentifierCase:
         return IdentifierCase('%s-%s' % (other_dash, self_dash), '%s-%s' % (other_visual, self_visual))
 
 class Grammar:
-    __slots__ = ('filename', 'language', 'rules')
+    __slots__ = ('filename', 'language', 'rules', 'start')
 
     def __init__(self, filename, src):
         self.filename = filename
         self.language = None
-        self.rules = {}
+        self.rules = collections.OrderedDict()
+        self.start = None
 
         cur_name = None
         cur_rule = None
@@ -113,7 +118,7 @@ class Grammar:
                 continue
             if not self.language:
                 raise GrammarError(i, 'language not specified')
-            if cur_rule is None:
+            if self.start is None:
                 if words[0] == 'keyword':
                     if len(words) != 2:
                         raise GrammarError(i, 'keyword takes 1 argument')
@@ -129,6 +134,12 @@ class Grammar:
                         raise GrammarError(i, 'symbol takes 2 argument')
                     self.add_symbol(words[1], words[2])
                     continue
+                elif words[0] == 'start':
+                    if len(words) != 2:
+                        raise GrammarError(i, 'start takes 1 argument')
+                    self.start = IdentifierCase(words[1])
+                    continue
+                raise GrammarError(i, 'expected start')
             if line.endswith(':') and len(line) != 1 and len(words) == 1:
                 if not orig_line[0].strip():
                     raise GrammarError(i, 'Rule names should not be indented')
@@ -144,7 +155,9 @@ class Grammar:
             raise GrammarError('eof', 'no rules')
         self.add_rule(cur_name, cur_rule)
 
-        print('%d rules parsed; resolving cross-references ...' % len(self.rules))
+        print('%s: %d rules parsed; resolving cross-references ...' % (self.language.visual, len(self.rules)))
+        assert self.start is not None
+        self.start = self.rules[self.start.visual]
         undefined = set()
         used = {'translation-unit'}
         for v in sorted(self.rules.values(), key=lambda x: x.tag.space):
@@ -167,6 +180,12 @@ class Grammar:
                         undefined.add(v.child.visual)
                 else:
                     used.add(v.child.tag.visual)
+        nullable = [k for (k, v) in self.rules.items() if not isinstance(v, (Option, Alias)) and v.nullable()]
+        if nullable:
+            nullable.sort()
+            print('Warning: Nullable rules (%d):' % len(nullable))
+            for v in nullable:
+                print('-', v)
         unused = set(self.rules.keys()) - used
         if unused:
             print('Warning: Unused rules (%d):' % len(unused))
@@ -181,6 +200,10 @@ class Grammar:
     def set_rule(self, k, v):
         if self.rules.setdefault(k, v) is not v:
             raise KeyError(k)
+        if self.start is None and not isinstance(v, (Term, Option)):
+            # First lhs.
+            # Note that we *may* be an alias to an option.
+            self.start = v
         return v
 
     def add_keyword(self, ty):
@@ -213,7 +236,12 @@ class Grammar:
         rule_bits = [self.get_rule(a) for a in bits]
         tag = '-'.join([r.tag.dash.split('-', 1)[1] if isinstance(r, Rule) else r.dash for r in rule_bits])
         tag = 'anon-' + tag
-        self.set_rule(tag, Sequence(tag, rule_bits))
+        if tag in self.rules:
+            print('Warning: coalescing multiple anonymous sequences: %s.' % tag)
+            assert isinstance(self.rules[tag], Sequence)
+            assert self.rules[tag].bits == rule_bits
+        else:
+            self.set_rule(tag, Sequence(tag, rule_bits))
         return tag
 
     def get_rule(self, vis):
@@ -246,11 +274,17 @@ class Term(Rule):
         self.tag = tag
         self.is_atom = is_atom
 
+    def nullable(self, stack=None):
+        return False
+
 class Option(Rule):
     __slots__ = ('tag', 'child')
     def __init__(self, tag, child):
         self.tag = tag
         self.child = child
+
+    def nullable(self, stack=None):
+        return True
 
 class Alias(Rule):
     __slots__ = ('tag', 'child')
@@ -258,17 +292,40 @@ class Alias(Rule):
         self.tag = IdentifierCase('alias-' + tag, tag)
         self.child = child
 
+    def nullable(self, stack=None):
+        return self.child.nullable(stack)
+
 class Sequence(Rule):
     __slots__ = ('tag', 'bits')
     def __init__(self, tag, bits):
         self.tag = IdentifierCase('tree-' + tag, tag)
         self.bits = list(bits)
 
+    def nullable(self, stack=None):
+        stack = stack or []
+        if self in stack:
+            return False
+        stack.append(self)
+        try:
+            return all(b.nullable(stack) for b in self.bits)
+        finally:
+            stack.pop()
+
 class Alternative(Rule):
     __slots__ = ('tag', 'bits')
     def __init__(self, tag, bits):
         self.tag = IdentifierCase('any-' + tag, tag)
         self.bits = list(bits)
+
+    def nullable(self, stack=None):
+        stack = stack or []
+        if self in stack:
+            return False
+        stack.append(self)
+        try:
+            return any(b.nullable(stack) for b in self.bits)
+        finally:
+            stack.pop()
 
 class FormatArgs:
     pass
@@ -530,11 +587,11 @@ def emit(grammar, header, source):
 
 def main(args=None):
     import os.path
+    import sys
     if args is None:
-        import sys
         args = sys.argv[1:]
     if len(args) != 3:
-        print('Usage: ./gram.py foo.gram')
+        sys.exit('Usage: ./gram.py foo.gram foo.c foo.h')
     with open(args[0]) as f:
         g = Grammar(args[0], f)
     assert os.path.basename(args[0]) == '%s.gram' % g.language.dash, args[0]
