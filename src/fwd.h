@@ -30,19 +30,19 @@ typedef struct Pool Pool;
 
 typedef struct Builder Builder;
 typedef struct BuildTranslationUnit BuildTranslationUnit;
-typedef struct BuildTopLevel BuildTopLevel;
+typedef struct BuildStatement BuildStatement;
 typedef struct BuildStorageClass BuildStorageClass;
-typedef struct BuildDeclaration BuildDeclaration;
 typedef struct BuildParamDeclaration BuildParamDeclaration;
 typedef struct BuildMemberDeclaration BuildMemberDeclaration;
 typedef struct BuildEnumerator BuildEnumerator;
 typedef struct BuildType BuildType;
-typedef struct BuildStatement BuildStatement;
 typedef struct BuildInitializer BuildInitializer;
 typedef struct BuildExpression BuildExpression;
 
 typedef struct BuildTypePairDeclarator BuildTypePairDeclarator;
 typedef struct BuildTypePairAbstractDeclarator BuildTypePairAbstractDeclarator;
+typedef struct BuildTypePairStructDeclarator BuildTypePairStructDeclarator;
+typedef struct BuildTypePairAbstractStructDeclarator BuildTypePairAbstractStructDeclarator;
 
 typedef struct Nfa Nfa;
 typedef struct MultiNfa MultiNfa;

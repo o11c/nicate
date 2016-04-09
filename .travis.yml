@@ -209,7 +209,7 @@ matrix:
             - python3-dev
     # TODO add gcc-6 once it is released and added to the whitelist.
     - compiler: gcc
-      env: REAL_CC='gcc-5 -fsanitize=address'     REAL_CXX='g++-5 -fsanitize=address'
+      env: REAL_CC='gcc-5 -fsanitize=address,undefined'     REAL_CXX='g++-5 -fsanitize=address,undefined'
       addons:
         apt:
           sources:

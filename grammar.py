@@ -277,6 +277,9 @@ class Term(Rule):
     def nullable(self, stack=None):
         return False
 
+    def comment(self):
+        return '%%%%token %s' % self.tag.dash
+
 class Option(Rule):
     __slots__ = ('tag', 'child')
     def __init__(self, tag, child):
@@ -286,6 +289,9 @@ class Option(Rule):
     def nullable(self, stack=None):
         return True
 
+    def comment(self):
+        return '%s: %s | %%%%empty;' % (self.tag.dash, self.child.tag.dash)
+
 class Alias(Rule):
     __slots__ = ('tag', 'child')
     def __init__(self, tag, child):
@@ -294,6 +300,9 @@ class Alias(Rule):
 
     def nullable(self, stack=None):
         return self.child.nullable(stack)
+
+    def comment(self):
+        return '%s: %s;' % (self.tag.dash, self.child.tag.dash)
 
 class Sequence(Rule):
     __slots__ = ('tag', 'bits')
@@ -311,6 +320,9 @@ class Sequence(Rule):
         finally:
             stack.pop()
 
+    def comment(self):
+        return '%s: %s;' % (self.tag.dash, ' '.join(b.tag.dash for b in self.bits))
+
 class Alternative(Rule):
     __slots__ = ('tag', 'bits')
     def __init__(self, tag, bits):
@@ -326,6 +338,9 @@ class Alternative(Rule):
             return any(b.nullable(stack) for b in self.bits)
         finally:
             stack.pop()
+
+    def comment(self):
+        return '%s: %s;' % (self.tag.dash, ' | '.join(b.tag.dash for b in self.bits))
 
 class FormatArgs:
     pass
@@ -387,6 +402,7 @@ def emit(grammar, header, source):
     h()
     h('typedef struct %(Nothing)s %(Nothing)s;')
     for ast in ast_values:
+        h('/* %s */' % ast.comment())
         h('typedef struct {0} {0};'.format((lang + ast.tag).camel))
     h()
     c('/* Concrete types only. */')
@@ -514,39 +530,39 @@ def emit(grammar, header, source):
     c('    {')
     c('        bool newline = false;')
     c('        bool no_space = false;')
-    if lang.upper == 'C89':
+    if lang.upper == 'GNU_C':
         # sorry, other languages don't get pretty-printing yet.
-        c('        newline |= strcmp(prev, ";") == 0 && prev_parent != %(upper)s_TREE_FOR_STATEMENT;')
-        c('        newline |= strcmp(next, "{") == 0 && next_parent != %(upper)s_TREE_LIST_INITIALIZER;')
-        c('        newline |= strcmp(prev, "{") == 0 && prev_parent != %(upper)s_TREE_LIST_INITIALIZER;')
-        c('        newline |= strcmp(next, "}") == 0 && next_parent != %(upper)s_TREE_LIST_INITIALIZER;')
-        c('        newline |= strcmp(prev, "}") == 0 && prev_parent != %(upper)s_TREE_LIST_INITIALIZER && strcmp(next, ";") != 0;')
+        c('        newline |= strcmp(prev, ";") == 0 && prev_parent != %(upper)s_TREE_ANON_FOR_LPAREN_EXPR_LIST_SEMICOLON_EXPR_LIST_SEMICOLON_EXPR_LIST_RPAREN_STATEMENT && prev_parent != %(upper)s_TREE_ANON_FOR_LPAREN_EXPR_LIST_SEMICOLON_EXPR_LIST_SEMICOLON_EXPR_LIST_RPAREN_STATEMENT_EXCEPT_IF && prev_parent != %(upper)s_TREE_ANON_FOR_LPAREN_NESTED_DECLARATION_EXPR_LIST_SEMICOLON_EXPR_LIST_RPAREN_STATEMENT && prev_parent != %(upper)s_TREE_ANON_FOR_LPAREN_NESTED_DECLARATION_EXPR_LIST_SEMICOLON_EXPR_LIST_RPAREN_STATEMENT_EXCEPT_IF;')
+        c('        newline |= strcmp(next, "{") == 0 && next_parent != %(upper)s_TREE_ANON_LBRACE_INITIALIZER_LIST_COMMA_RBRACE && next_parent != %(upper)s_TREE_ANON_LBRACE_INITIALIZER_LIST_RBRACE;')
+        c('        newline |= strcmp(prev, "{") == 0 && prev_parent != %(upper)s_TREE_ANON_LBRACE_INITIALIZER_LIST_COMMA_RBRACE && prev_parent != %(upper)s_TREE_ANON_LBRACE_INITIALIZER_LIST_RBRACE;')
+        c('        newline |= strcmp(next, "}") == 0 && next_parent != %(upper)s_TREE_ANON_LBRACE_INITIALIZER_LIST_COMMA_RBRACE && next_parent != %(upper)s_TREE_ANON_LBRACE_INITIALIZER_LIST_RBRACE;')
+        c('        newline |= strcmp(prev, "}") == 0 && prev_parent != %(upper)s_TREE_ANON_LBRACE_INITIALIZER_LIST_COMMA_RBRACE && prev_parent != %(upper)s_TREE_ANON_LBRACE_INITIALIZER_LIST_RBRACE && strcmp(next, ";") != 0;')
         c('        no_space |= strcmp(prev, "(") == 0;')
-        c('        no_space |= strcmp(next, "(") == 0 && (next_parent == %(upper)s_TREE_CALL_EXPRESSION || next_parent == %(upper)s_TREE_FUNCTION_DECLARATOR || next_parent == %(upper)s_TREE_FUNCTION_ABSTRACT_DECLARATOR);')
+        c('        no_space |= strcmp(next, "(") == 0 && (next_parent == %(upper)s_TREE_ANON_POSTFIX_EXPRESSION_LPAREN_EXPR_LIST_RPAREN || next_parent == %(upper)s_TREE_ANON_DIRECT_DECLARATOR_LPAREN_IDENTIFIER_LIST_RPAREN || next_parent == %(upper)s_TREE_ANON_DIRECT_DECLARATOR_LPAREN_PARAMETER_FORWARD_DECLARATIONS_PARAMETER_TYPE_LIST_RPAREN || next_parent == %(upper)s_TREE_ANON_DIRECT_DECLARATOR_LPAREN_PARAMETER_TYPE_LIST_RPAREN || next_parent == %(upper)s_TREE_ANON_DIRECT_ABSTRACT_DECLARATOR_LPAREN_PARAMETER_FORWARD_DECLARATIONS_PARAMETER_TYPE_LIST_RPAREN || next_parent == %(upper)s_TREE_ANON_DIRECT_ABSTRACT_DECLARATOR_LPAREN_PARAMETER_TYPE_LIST_RPAREN);')
         c('        no_space |= strcmp(next, ")") == 0;')
         c('        no_space |= strcmp(prev, "[") == 0;')
         c('        no_space |= strcmp(next, "[") == 0;')
         c('        no_space |= strcmp(next, "]") == 0;')
         c('        no_space |= strcmp(next, ",") == 0;')
         c('        no_space |= strcmp(next, ";") == 0;')
-        c('        no_space |= strcmp(prev, "*") == 0 && (prev_parent == %(upper)s_TREE_POINTER_DECLARATOR || prev_parent == %(upper)s_TREE_LEAF_POINTER_ABSTRACT_DECLARATOR || prev_parent == %(upper)s_TREE_RECURSIVE_POINTER_ABSTRACT_DECLARATOR);')
-        c('        no_space |= strcmp(next, ":") == 0 && (next_parent == %(upper)s_TREE_LABEL_STATEMENT || next_parent == %(upper)s_TREE_CASE_STATEMENT || next_parent == %(upper)s_TREE_DEFAULT_STATEMENT);')
+        c('        no_space |= strcmp(prev, "*") == 0 && (prev_parent == %(upper)s_TREE_ANON_STAR_TYPE_QUALIFIER_LIST || prev_parent == %(upper)s_TREE_ANON_STAR_TYPE_QUALIFIER_LIST_POINTER);')
+        c('        no_space |= strcmp(next, ":") == 0 && (next_parent == %(upper)s_TREE_ANON_IDENTIFIER_COLON || next_parent == %(upper)s_TREE_ANON_IDENTIFIER_COLON_ATTRIBUTES || next_parent == %(upper)s_TREE_ANON_CASE_CONSTANT_EXPRESSION_COLON || next_parent == %(upper)s_TREE_ANON_CASE_CONSTANT_EXPRESSION_ELLIPSIS_CONSTANT_EXPRESSION_COLON || next_parent == %(upper)s_TREE_ANON_DEFAULT_COLON || next_parent == %(upper)s_TREE_ANON_DEFAULT_COLON_ASSIGNMENT_EXPRESSION || next_parent == %(upper)s_TREE_ANON_TYPE_NAME_COLON_ASSIGNMENT_EXPRESSION);')
         c('        no_space |= strcmp(prev, ".") == 0;')
         c('        no_space |= strcmp(next, ".") == 0;')
         c('        no_space |= strcmp(prev, "->") == 0;')
         c('        no_space |= strcmp(next, "->") == 0;')
-        c('        no_space |= strcmp(next, "++") == 0 && next_parent == %(upper)s_TREE_POST_INCREMENT_EXPRESSION;')
-        c('        no_space |= strcmp(next, "--") == 0 && next_parent == %(upper)s_TREE_POST_DECREMENT_EXPRESSION;')
-        c('        no_space |= strcmp(prev, "++") == 0 && prev_parent == %(upper)s_TREE_PRE_INCREMENT_EXPRESSION;')
-        c('        no_space |= strcmp(prev, "--") == 0 && prev_parent == %(upper)s_TREE_PRE_DECREMENT_EXPRESSION;')
-        c('        no_space |= strcmp(prev, "&") == 0 && next[0] != \'&\' && prev_parent == %(upper)s_TREE_ADDRESSOF_EXPRESSION;')
-        c('        no_space |= strcmp(prev, "*") == 0 && prev_parent == %(upper)s_TREE_DEREFERENCE_EXPRESSION;')
-        c('        no_space |= strcmp(prev, "+") == 0 && next[0] != \'+\' && prev_parent == %(upper)s_TREE_UNARY_PLUS_EXPRESSION;')
-        c('        no_space |= strcmp(prev, "-") == 0 && next[0] != \'-\' && prev_parent == %(upper)s_TREE_UNARY_MINUS_EXPRESSION;')
-        c('        no_space |= strcmp(prev, "~") == 0 && prev_parent == %(upper)s_TREE_BITWISE_NOT_EXPRESSION;')
-        c('        no_space |= strcmp(prev, "!") == 0 && prev_parent == %(upper)s_TREE_LOGICAL_NOT_EXPRESSION;')
+        c('        no_space |= strcmp(next, "++") == 0 && next_parent == %(upper)s_TREE_ANON_POSTFIX_EXPRESSION_INCR;')
+        c('        no_space |= strcmp(next, "--") == 0 && next_parent == %(upper)s_TREE_ANON_POSTFIX_EXPRESSION_DECR;')
+        c('        no_space |= strcmp(prev, "++") == 0 && prev_parent == %(upper)s_TREE_ANON_INCR_CAST_EXPRESSION;')
+        c('        no_space |= strcmp(prev, "--") == 0 && prev_parent == %(upper)s_TREE_ANON_DECR_CAST_EXPRESSION;')
+        c('        no_space |= strcmp(prev, "&") == 0 && next[0] != \'&\' && prev_parent == %(upper)s_TREE_ANON_AMPERSAND_CAST_EXPRESSION;')
+        c('        no_space |= strcmp(prev, "*") == 0 && prev_parent == %(upper)s_TREE_ANON_STAR_CAST_EXPRESSION;')
+        c('        no_space |= strcmp(prev, "+") == 0 && next[0] != \'+\' && prev_parent == %(upper)s_TREE_ANON_PLUS_CAST_EXPRESSION;')
+        c('        no_space |= strcmp(prev, "-") == 0 && next[0] != \'-\' && prev_parent == %(upper)s_TREE_ANON_MINUS_CAST_EXPRESSION;')
+        c('        no_space |= strcmp(prev, "~") == 0 && prev_parent == %(upper)s_TREE_ANON_TILDE_CAST_EXPRESSION;')
+        c('        no_space |= strcmp(prev, "!") == 0 && prev_parent == %(upper)s_TREE_ANON_BANG_CAST_EXPRESSION;')
         c('        no_space |= strcmp(prev, "sizeof") == 0 && strcmp(next, "(") == 0;')
-        c('        no_space |= strcmp(prev, ")") == 0 && prev_parent == %(upper)s_TREE_CAST_EXPRESSION;')
+        c('        no_space |= strcmp(prev, ")") == 0 && (prev_parent == %(upper)s_TREE_ANON_LPAREN_TYPE_NAME_RPAREN_LBRACE_INITIALIZER_LIST_COMMA_RBRACE || prev_parent == %(upper)s_TREE_ANON_LPAREN_TYPE_NAME_RPAREN_LBRACE_INITIALIZER_LIST_RBRACE || prev_parent == %(upper)s_TREE_ANON_LPAREN_TYPE_NAME_RPAREN_CAST_EXPRESSION);')
     else:
         c('        (void)prev_parent;')
     c('        if (newline)')

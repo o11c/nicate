@@ -24,8 +24,6 @@ import nicate
 @pytest.fixture(params=glob.glob('gram/*.gram'))
 def gram(request):
     with open(request.param) as f:
-        if request.param == 'gram/c89.gram':
-            pytest.skip('bad grammar still relied on by builder')
         return grammar.Grammar(request.param, f)
 
 def lower_grammar(gram):

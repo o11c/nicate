@@ -44,33 +44,31 @@ def test_top(builder):
     enum1 = b.enumerator_init('BAR', expr_1)
     enum2 = b.enumerator_noinit('BAZ')
 
-    top = b.top_struct_definition('Foo', [member1, member2, member3])
+    top = b.struct_definition('Foo', [member1, member2, member3])
     tu = b.tu([top])
     assert tu.emit_to_string() == 'struct Foo\n{\n    unsigned int bar;\n    unsigned int baz : 1;\n    unsigned int : 0;\n};\n'
 
-    top = b.top_union_definition('Foo', [member1, member2, member3])
+    top = b.union_definition('Foo', [member1, member2, member3])
     tu = b.tu([top])
     assert tu.emit_to_string() == 'union Foo\n{\n    unsigned int bar;\n    unsigned int baz : 1;\n    unsigned int : 0;\n};\n'
 
-    top = b.top_enum_definition('Foo', [enum1, enum2])
+    top = b.enum_definition('Foo', [enum1, enum2])
     tu = b.tu([top])
     assert tu.emit_to_string() == 'enum Foo\n{\n    BAR = 1, BAZ\n};\n'
 
-    no_sc = b.storage_class_none()
-    fty = b.type_function(ty_uint, [b.param_declaration(no_sc, ty_uint, 'bar')], True)
+    fty = b.type_function(ty_uint, [b.param_declaration([], ty_uint, 'bar')], True)
     body = b.stmt_return(expr_0)
-    top = b.top_function_definition(no_sc, 'foo', fty, body)
+    top = b.function_definition([], 'foo', fty, body)
     tu = b.tu([top])
     assert tu.emit_to_string() == 'unsigned int foo(unsigned int bar, ...)\n{\n    return 0;\n}\n'
 
 
 def test_type(builder):
     b = builder
-    no_sc = b.storage_class_none()
     ty_void = b.type_void()
     ty_int = b.type_signed_int()
     ty_foo = b.type_typedef('Foo')
-    ty_sig_handler = b.type_pointer(b.type_function(ty_void, [b.param_declaration(no_sc, ty_int, 'sig')], False))
+    ty_sig_handler = b.type_pointer(b.type_function(ty_void, [b.param_declaration([], ty_int, 'sig')], False))
     expr_0 = b.expr_int(0)
     init_0 = b.initializer_expr(expr_0)
     init_00 = b.initializer_braced([init_0, init_0])
@@ -101,55 +99,54 @@ def test_type(builder):
             ('volatile', 'Foo const volatile{s}', b.type_const(ty_foo)),
             ('array', 'Foo{s}[0]', ty_foo, expr_0),
             ('array_unknown_bound', 'Foo{s}[]', ty_foo),
-            ('function', 'Foo{s}(void)', ty_foo, [b.param_declaration_anon(no_sc, ty_void)], False),
-            ('function', 'Foo{s}(signed int, ...)', ty_foo, [b.param_declaration_anon(no_sc, ty_int)], True),
+            ('function', 'Foo{s}(void)', ty_foo, [b.param_declaration_anon([], ty_void)], False),
+            ('function', 'Foo{s}(signed int, ...)', ty_foo, [b.param_declaration_anon([], ty_int)], True),
             ('const', 'Foo volatile *const{s}', b.type_pointer(b.type_volatile(ty_foo))),
             ('const', 'Foo const{s}[]', b.type_array_unknown_bound(ty_foo)),
             ('array_unknown_bound', 'Foo const{s}[]', b.type_const(ty_foo)),
-            ('pointer', 'Foo (*{ns})(void)', b.type_function(ty_foo, [b.param_declaration_anon(no_sc, ty_void)], False)),
+            ('pointer', 'Foo (*{ns})(void)', b.type_function(ty_foo, [b.param_declaration_anon([], ty_void)], False)),
             ('const', 'Foo volatile (*const{s})[]', b.type_pointer(b.type_array_unknown_bound(b.type_volatile(ty_foo)))),
             ('array_unknown_bound', 'Foo *{ns}[]', b.type_pointer(ty_foo)),
-            ('function', 'void (*{ns}(signed int signum, void (*handler)(signed int sig)))(signed int sig)', ty_sig_handler, [b.param_declaration(no_sc, ty_int, 'signum'), b.param_declaration(no_sc, ty_sig_handler, 'handler')], False),
+            ('function', 'void (*{ns}(signed int signum, void (*handler)(signed int sig)))(signed int sig)', ty_sig_handler, [b.param_declaration([], ty_int, 'signum'), b.param_declaration([], ty_sig_handler, 'handler')], False),
     ]:
         ty = getattr(b, 'type_%s' % t)(*a)
 
-        decl = b.declaration_noinit(no_sc, ty, 'foo')
-        top = b.top_decl(decl)
+        decl = b.declaration_noinit([], ty, 'foo')
+        top = decl
         tu = b.tu([top])
         assert tu.emit_to_string() == '%s;\n' % s.format(s=' foo', ns='foo')
 
-        decl = b.declaration_init(no_sc, ty, 'foo', init_0)
-        top = b.top_decl(decl)
+        decl = b.declaration_init([], ty, 'foo', init_0)
+        top = decl
         tu = b.tu([top])
         assert tu.emit_to_string() == '%s = 0;\n' % s.format(s=' foo', ns='foo')
 
-        decl = b.declaration_init(no_sc, ty, 'foo', init_00)
-        top = b.top_decl(decl)
+        decl = b.declaration_init([], ty, 'foo', init_00)
+        top = decl
         tu = b.tu([top])
         assert tu.emit_to_string() == '%s = { 0, 0 };\n' % s.format(s=' foo', ns='foo')
 
-        decl = b.declaration_noinit(no_sc, b.type_function(ty_void, [b.param_declaration_anon(no_sc, ty)], False), 'foo')
-        top = b.top_decl(decl)
+        decl = b.declaration_noinit([], b.type_function(ty_void, [b.param_declaration_anon([], ty)], False), 'foo')
+        top = decl
         tu = b.tu([top])
         assert tu.emit_to_string() == 'void foo(%s);\n' % s.format(s='', ns='')
 
-        decl = b.declaration_noinit(no_sc, b.type_function(ty_void, [b.param_declaration(no_sc, ty, 'bar')], False), 'foo')
-        top = b.top_decl(decl)
+        decl = b.declaration_noinit([], b.type_function(ty_void, [b.param_declaration([], ty, 'bar')], False), 'foo')
+        top = decl
         tu = b.tu([top])
         assert tu.emit_to_string() == 'void foo(%s);\n' % s.format(s=' bar', ns='bar')
 
         decl = b.member_declaration(ty, 'bar')
-        top = b.top_struct_definition('Foo', [decl])
+        top = b.struct_definition('Foo', [decl])
         tu = b.tu([top])
         assert tu.emit_to_string() == 'struct Foo\n{\n    %s;\n};\n' % s.format(s=' bar', ns='bar')
 
 def sf(b, s):
-    n = b.storage_class_none()
     v = b.type_void()
-    p = b.param_declaration_anon(n, v)
+    p = b.param_declaration_anon([], v)
     t = b.type_function(v, [p], False)
-    c = b.stmt_compound([], [s])
-    f = b.top_function_definition(n, 'foo', t, c)
+    c = b.stmt_compound([s])
+    f = b.function_definition([], 'foo', t, c)
     return b.tu([f])
 
 def ef(b, e):
@@ -161,7 +158,6 @@ def pat(s):
 def test_stmt(builder):
     b = builder
 
-    no_sc = b.storage_class_none()
     ty_int = b.type_signed_int()
     expr_none = b.expr_none()
     expr_0 = b.expr_int(0)
@@ -183,22 +179,22 @@ def test_stmt(builder):
     tu = sf(b, b.stmt_label('bar', b.stmt_none()))
     assert tu.emit_to_string() == pat('bar:;')
 
-    tu = sf(b, b.stmt_label('bar', b.stmt_compound([], [])))
+    tu = sf(b, b.stmt_label('bar', b.stmt_compound([])))
     assert tu.emit_to_string() == pat('bar:\n{\n}')
 
     tu = sf(b, b.stmt_case(expr_0, b.stmt_none()))
     assert tu.emit_to_string() == pat('case 0:;')
 
-    tu = sf(b, b.stmt_case(expr_0, b.stmt_compound([], [])))
+    tu = sf(b, b.stmt_case(expr_0, b.stmt_compound([])))
     assert tu.emit_to_string() == pat('case 0:\n{\n}')
 
     tu = sf(b, b.stmt_default(b.stmt_none()))
     assert tu.emit_to_string() == pat('default:;')
 
-    tu = sf(b, b.stmt_default(b.stmt_compound([], [])))
+    tu = sf(b, b.stmt_default(b.stmt_compound([])))
     assert tu.emit_to_string() == pat('default:\n{\n}')
 
-    tu = sf(b, b.stmt_compound([b.declaration_init(no_sc, ty_int, 'i', b.initializer_expr(expr_0)), b.declaration_noinit(no_sc, ty_int, 'j')], [stmt_0, stmt_1, stmt_2, stmt_3]))
+    tu = sf(b, b.stmt_compound([b.declaration_init([], ty_int, 'i', b.initializer_expr(expr_0)), b.declaration_noinit([], ty_int, 'j'), stmt_0, stmt_1, stmt_2, stmt_3]))
     assert tu.emit_to_string() == pat('{\n    signed int i = 0;\n    signed int j;\n    0;\n    1;\n    2;\n    3;\n}')
 
     tu = sf(b, b.stmt_if(expr_0, b.stmt_if_else(expr_1, stmt_0, stmt_1)))
@@ -207,25 +203,25 @@ def test_stmt(builder):
     tu = sf(b, b.stmt_if_else(expr_0, b.stmt_if(expr_1, stmt_0), b.stmt_if(expr_2, stmt_1)))
     assert tu.emit_to_string() == pat('if (0)\n{\n    if (1)\n    {\n        0;\n    }\n}\nelse if (2)\n{\n    1;\n}')
 
-    tu = sf(b, b.stmt_if(expr_0, b.stmt_compound([], [])))
+    tu = sf(b, b.stmt_if(expr_0, b.stmt_compound([])))
     assert tu.emit_to_string() == pat('if (0)\n{\n}')
 
     tu = sf(b, b.stmt_while(expr_0, stmt_0))
     assert tu.emit_to_string() == pat('while (0)\n{\n    0;\n}')
 
-    tu = sf(b, b.stmt_while(expr_0, b.stmt_compound([], [])))
+    tu = sf(b, b.stmt_while(expr_0, b.stmt_compound([])))
     assert tu.emit_to_string() == pat('while (0)\n{\n}')
 
     tu = sf(b, b.stmt_do_while(stmt_0, expr_0))
     assert tu.emit_to_string() == pat('do\n{\n    0;\n}\nwhile (0);')
 
-    tu = sf(b, b.stmt_do_while(b.stmt_compound([], []), expr_0))
+    tu = sf(b, b.stmt_do_while(b.stmt_compound([]), expr_0))
     assert tu.emit_to_string() == pat('do\n{\n}\nwhile (0);')
 
     tu = sf(b, b.stmt_for(expr_0, expr_1, expr_2, stmt_3))
     assert tu.emit_to_string() == pat('for (0; 1; 2)\n{\n    3;\n}')
 
-    tu = sf(b, b.stmt_for(expr_none, expr_none, expr_none, b.stmt_compound([], [])))
+    tu = sf(b, b.stmt_for(expr_none, expr_none, expr_none, b.stmt_compound([])))
     assert tu.emit_to_string() == pat('for (;;)\n{\n}')
 
     tu = sf(b, b.stmt_goto('fail'))

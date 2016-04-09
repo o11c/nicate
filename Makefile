@@ -15,7 +15,9 @@
 #   You should have received a copy of the GNU Lesser General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-CC = gcc -fsanitize=address
+CC = gcc -fsanitize=address,undefined
+# Oldest locally tested version.
+# CC = gcc-4.2
 CFLAGS = -g -O2 ${WARNINGS}
 CPPFLAGS =
 LDFLAGS =
@@ -28,7 +30,7 @@ WARNINGS = -Werror -Wall -Wextra -Wformat -Wunused -Wc++-compat -Wmissing-declar
 LIB_OBJECTS = \
     builder.o \
     bridge.o \
-    c89.gen.o \
+    gnu-c.gen.o \
     pool.o \
     hashmap.o \
     bitset.o \
@@ -94,7 +96,7 @@ test: lib/libnicate.so
 bin/hello.x: obj/hello.o lib/libnicate.so
 lib/libnicate.so: $(addprefix obj/,${LIB_OBJECTS})
 # force order
-obj/bridge.o obj/builder.o: gen/c89.gen.h
+obj/bridge.o obj/builder.o: gen/gnu-c.gen.h
 gen/hello2.gen.c: lib/libnicate.so nicate.py
 
 lib/lib%.so: obj/%.o

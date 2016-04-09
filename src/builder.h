@@ -32,24 +32,22 @@ void builder_emit_tu_to_file(BuildTranslationUnit *tu, FILE *fp);
 char *builder_emit_tu_to_string(BuildTranslationUnit *tu);
 void builder_free_string(char *);
 
-BuildTranslationUnit *build_tu(Builder *b, size_t ntops, BuildTopLevel **tops);
+BuildTranslationUnit *build_tu(Builder *b, size_t ntops, BuildStatement **tops);
 
-BuildTopLevel *build_top_decl(Builder *b, BuildDeclaration *decl);
-BuildTopLevel *build_top_struct_definition(Builder *b, const char *name, size_t nmembs, BuildMemberDeclaration **decls);
-BuildTopLevel *build_top_union_definition(Builder *b, const char *name, size_t nmembs, BuildMemberDeclaration **decls);
-BuildTopLevel *build_top_enum_definition(Builder *b, const char *name, size_t nvars, BuildEnumerator **vars);
-BuildTopLevel *build_top_function_definition(Builder *b, BuildStorageClass *scs, const char *name, BuildType *fnty, BuildStatement *body);
+BuildStatement *build_struct_definition(Builder *b, const char *name, size_t nmembs, BuildMemberDeclaration **decls);
+BuildStatement *build_union_definition(Builder *b, const char *name, size_t nmembs, BuildMemberDeclaration **decls);
+BuildStatement *build_enum_definition(Builder *b, const char *name, size_t nvars, BuildEnumerator **vars);
+BuildStatement *build_function_definition(Builder *b, size_t nscs, BuildStorageClass **scs, const char *name, BuildType *fnty, BuildStatement *body);
 
-BuildStorageClass *build_storage_class_none(Builder *b);
 BuildStorageClass *build_storage_class_typedef(Builder *b);
 BuildStorageClass *build_storage_class_extern(Builder *b);
 BuildStorageClass *build_storage_class_static(Builder *b);
 BuildStorageClass *build_storage_class_register(Builder *b);
 
-BuildDeclaration *build_declaration_noinit(Builder *b, BuildStorageClass *scs, BuildType *type, const char *name);
-BuildDeclaration *build_declaration_init(Builder *b, BuildStorageClass *scs, BuildType *type, const char *name, BuildInitializer *init);
-BuildParamDeclaration *build_param_declaration(Builder *b, BuildStorageClass *scs, BuildType *type, const char *name);
-BuildParamDeclaration *build_param_declaration_anon(Builder *b, BuildStorageClass *scs, BuildType *type);
+BuildStatement *build_declaration_noinit(Builder *b, size_t nscs, BuildStorageClass **scs, BuildType *type, const char *name);
+BuildStatement *build_declaration_init(Builder *b, size_t nscs, BuildStorageClass **scs, BuildType *type, const char *name, BuildInitializer *init);
+BuildParamDeclaration *build_param_declaration(Builder *b, size_t nscs, BuildStorageClass **scs, BuildType *type, const char *name);
+BuildParamDeclaration *build_param_declaration_anon(Builder *b, size_t nscs, BuildStorageClass **scs, BuildType *type);
 BuildMemberDeclaration *build_member_declaration(Builder *b, BuildType *type, const char *name);
 BuildMemberDeclaration *build_member_declaration_bitfield(Builder *b, BuildType *type, const char *name, BuildExpression *width);
 BuildMemberDeclaration *build_member_declaration_bitfield_anon(Builder *b, BuildType *type, BuildExpression *width);
@@ -87,7 +85,7 @@ BuildStatement *build_stmt_expr(Builder *b, BuildExpression *expr);
 BuildStatement *build_stmt_label(Builder *b, const char *label, BuildStatement *target);
 BuildStatement *build_stmt_case(Builder *b, BuildExpression *expr, BuildStatement *target);
 BuildStatement *build_stmt_default(Builder *b, BuildStatement *target);
-BuildStatement *build_stmt_compound(Builder *b, size_t ndecls, BuildDeclaration **decls, size_t nstmts, BuildStatement **stmts);
+BuildStatement *build_stmt_compound(Builder *b, size_t nstmts, BuildStatement **stmts);
 BuildStatement *build_stmt_if(Builder *b, BuildExpression *cond, BuildStatement *if_true);
 BuildStatement *build_stmt_if_else(Builder *b, BuildExpression *cond, BuildStatement *if_true, BuildStatement *if_false);
 BuildStatement *build_stmt_while(Builder *b, BuildExpression *cond, BuildStatement *body);

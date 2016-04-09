@@ -25,499 +25,667 @@
 #include "pool.h"
 
 
-C89_AtomIdentifier *build_id(Builder *b, const char *id)
+GnuCAtomIdentifier *build_id(Builder *b, const char *id)
 {
     size_t i = 0;
     assert (id[i] == '_' || isalpha(id[i]));
     while (id[++i])
         assert (id[i] == '_' || isalnum(id[i]));
-    return c89_create_atom_identifier(b->pool, id);
+    return gnu_c_create_atom_identifier(b->pool, id);
 }
-C89_AtomTypedefName *build_typedef_name(Builder *b, const char *id)
+GnuCAtomTypedefName *build_typedef_name(Builder *b, const char *id)
 {
     size_t i = 0;
     assert (id[i] == '_' || isalpha(id[i]));
     while (id[++i])
         assert (id[i] == '_' || isalnum(id[i]));
-    return c89_create_atom_typedef_name(b->pool, id);
+    return gnu_c_create_atom_typedef_name(b->pool, id);
 }
 
-BuildTranslationUnit *build_tu_ast(Builder *b, C89_AnyTranslationUnit *ast)
+BuildTranslationUnit *build_tu_ast(Builder *b, GnuCAliasTranslationUnit *ast)
 {
     BuildTranslationUnit rv = {ast};
     return (BuildTranslationUnit *)pool_intern(b->pool, &rv, sizeof(rv));
 }
-BuildTopLevel *build_top_ast(Builder *b, C89_AnyExternalDeclaration *ast)
+BuildStatement *build_stmt_ast(Builder *b, GnuCOptLabels *labels, GnuCAnyBlockItem *ast)
 {
-    BuildTopLevel rv = {ast};
-    return (BuildTopLevel *)pool_intern(b->pool, &rv, sizeof(rv));
+    BuildStatement rv = {labels, ast, NULL};
+    return (BuildStatement *)pool_intern(b->pool, &rv, sizeof(rv));
 }
-BuildStorageClass *build_storage_class_ast(Builder *b, C89_OptStorageClassSpecifier *ast)
+BuildStatement *build_decl_ast(Builder *b, GnuCAnyDeclaration *ast)
+{
+    BuildStatement rv = {NULL, (GnuCAnyBlockItem *)ast, (GnuCAnyExternalDeclaration *)ast};
+    return (BuildStatement *)pool_intern(b->pool, &rv, sizeof(rv));
+}
+BuildStorageClass *build_storage_class_ast(Builder *b, GnuCAnyHeadDeclarationSpecifier *ast)
 {
     BuildStorageClass rv = {ast};
     return (BuildStorageClass *)pool_intern(b->pool, &rv, sizeof(rv));
 }
-BuildDeclaration *build_decl_ast(Builder *b, C89_TreeDeclaration *ast)
-{
-    BuildDeclaration rv = {ast};
-    return (BuildDeclaration *)pool_intern(b->pool, &rv, sizeof(rv));
-}
-BuildParamDeclaration *build_param_ast(Builder *b, C89_AnyParameterDeclaration *ast)
+BuildParamDeclaration *build_param_ast(Builder *b, GnuCAnyParameterDeclaration *ast)
 {
     BuildParamDeclaration rv = {ast};
     return (BuildParamDeclaration *)pool_intern(b->pool, &rv, sizeof(rv));
 }
-BuildMemberDeclaration *build_member_ast(Builder *b, C89_TreeStructDeclaration *ast)
+BuildMemberDeclaration *build_member_ast(Builder *b, GnuCAnyStructDeclaration *ast)
 {
     BuildMemberDeclaration rv = {ast};
     return (BuildMemberDeclaration *)pool_intern(b->pool, &rv, sizeof(rv));
 }
-BuildEnumerator *build_enum_ast(Builder *b, C89_AnyEnumerator *ast)
+BuildEnumerator *build_enum_ast(Builder *b, GnuCAnyEnumerator *ast)
 {
     BuildEnumerator rv = {ast};
     return (BuildEnumerator *)pool_intern(b->pool, &rv, sizeof(rv));
 }
-BuildType *build_type_spec_ast(Builder *b, C89_AnyTypeSpecifier *ast, bool isc, bool isv)
+BuildType *build_type_spec_ast(Builder *b, GnuCAnyTailDeclarationSpecifiers *ds, GnuCAnySpecifierQualifierList *sql)
 {
     BuildType rv;
     rv.type = BTYTY_SPEC;
-    rv.ast_spec = ast;
-    rv.array_size = NULL;
-    rv.is_const = isc;
-    rv.is_volatile = isv;
+    rv.spec.ast_dspec = ds;
+    rv.spec.ast_sql = sql;
+    rv.flags = (struct BuildTypeFlags){};
     return (BuildType *)pool_intern(b->pool, &rv, sizeof(rv));
 }
-BuildType *build_type_ptr_ast(Builder *b, BuildType *target, bool isc, bool isv)
+BuildType *build_type_ptr_ast(Builder *b, BuildType *target)
 {
     BuildType rv;
     rv.type = BTYTY_PTR;
-    rv.target = target;
-    rv.array_size = NULL;
-    rv.is_const = isc;
-    rv.is_volatile = isv;
+    rv.ptr.element = target;
+    rv.ptr._unused = NULL;
+    rv.flags = (struct BuildTypeFlags){};
     return (BuildType *)pool_intern(b->pool, &rv, sizeof(rv));
 }
-BuildType *build_type_array_ast(Builder *b, BuildType *element, C89_OptConditionalExpression *size, bool isc, bool isv)
+BuildType *build_type_array_ast(Builder *b, BuildType *element, GnuCAnyArrayDeclarator *size)
 {
     BuildType rv;
     rv.type = BTYTY_ARRAY;
-    rv.target = element;
-    rv.array_size = size;
-    rv.is_const = isc;
-    rv.is_volatile = isv;
-    assert (!isc && !isv);
+    rv.array.element = element;
+    rv.array.size = size;
+    rv.flags = (struct BuildTypeFlags){};
     return (BuildType *)pool_intern(b->pool, &rv, sizeof(rv));
 }
-BuildType *build_type_fun_ast(Builder *b, BuildType *target, C89_OptParameterTypeList *args, bool isc, bool isv)
+BuildType *build_type_fun_ast(Builder *b, BuildType *target, GnuCAnyParameterTypeList *args)
 {
     BuildType rv;
     rv.type = BTYTY_FUN;
-    rv.target = target;
-    rv.args = args;
-    rv.is_const = isc;
-    rv.is_volatile = isv;
-    assert (!isc && !isv);
+    rv.fun.ret = target;
+    rv.fun.args = args;
+    rv.flags = (struct BuildTypeFlags){};
     return (BuildType *)pool_intern(b->pool, &rv, sizeof(rv));
 }
 BuildType *build_type_copy_ast(Builder *b, BuildType copy)
 {
     return (BuildType *)pool_intern(b->pool, &copy, sizeof(copy));
 }
-BuildStatement *build_stmt_ast(Builder *b, C89_AnyStatement *ast)
-{
-    BuildStatement rv = {ast};
-    return (BuildStatement *)pool_intern(b->pool, &rv, sizeof(rv));
-}
-BuildInitializer *build_init_ast(Builder *b, C89_AnyInitializer *ast)
+BuildInitializer *build_init_ast(Builder *b, GnuCAnyInitializer *ast)
 {
     BuildInitializer rv = {ast};
     return (BuildInitializer *)pool_intern(b->pool, &rv, sizeof(rv));
 }
-BuildExpression *build_expr_ast(Builder *b, C89_AnyCommaExpression *ast)
+BuildExpression *build_expr_ast(Builder *b, GnuCAnyExprList *ast)
 {
     BuildExpression rv = {ast};
     return (BuildExpression *)pool_intern(b->pool, &rv, sizeof(rv));
 }
 
 /* The hard part. */
-static C89_OptTypeQualifierList *build_tql(Builder *b, bool is_const, bool is_volatile)
+static GnuCOptTypeQualifierList *build_tql(Builder *b, struct BuildTypeFlags flags)
 {
-    /* this approach won't scale, but meh */
-    if (!is_const)
+    GnuCOptAttributes *no_attrs = (GnuCOptAttributes *)b->nothing;
+    GnuCOptTypeQualifierList *rv = (GnuCOptTypeQualifierList *)b->nothing;
+    if (flags.is_const)
     {
-        if (!is_volatile)
-        {
-            return (C89_OptTypeQualifierList *)b->nothing;
-        }
-        else
-        {
-            return (C89_OptTypeQualifierList *)b->kw_volatile;
-        }
+        GnuCTreeAnonTypeQualifierListTypeQualifierAttributes *tmp = gnu_c_create_tree_anon_type_qualifier_list_type_qualifier_attributes(b->pool, rv, (GnuCAnyTypeQualifier *)b->kw_const, no_attrs);
+        rv = (GnuCOptTypeQualifierList *)tmp;
+    }
+    if (flags.is_volatile)
+    {
+        GnuCTreeAnonTypeQualifierListTypeQualifierAttributes *tmp = gnu_c_create_tree_anon_type_qualifier_list_type_qualifier_attributes(b->pool, rv, (GnuCAnyTypeQualifier *)b->kw_const, no_attrs);
+        rv = (GnuCOptTypeQualifierList *)tmp;
+    }
+    return rv;
+}
+static GnuCAnyTailDeclarationSpecifiers *build_ds(Builder *b, GnuCAnyTailDeclarationSpecifiers *specs, struct BuildTypeFlags flags)
+{
+    if (flags.is_const)
+    {
+        GnuCTreeAnonTailDeclarationSpecifiersTailDeclarationSpecifier *tmp = gnu_c_create_tree_anon_tail_declaration_specifiers_tail_declaration_specifier(b->pool, specs, (GnuCAnyTailDeclarationSpecifier *)b->kw_const);
+        specs = (GnuCAnyTailDeclarationSpecifiers *)tmp;
+    }
+    if (flags.is_volatile)
+    {
+        GnuCTreeAnonTailDeclarationSpecifiersTailDeclarationSpecifier *tmp = gnu_c_create_tree_anon_tail_declaration_specifiers_tail_declaration_specifier(b->pool, specs, (GnuCAnyTailDeclarationSpecifier *)b->kw_volatile);
+        specs = (GnuCAnyTailDeclarationSpecifiers *)tmp;
+    }
+    return specs;
+}
+static GnuCAnySpecifierQualifierList *build_sql(Builder *b, GnuCAnySpecifierQualifierList *specs, struct BuildTypeFlags flags)
+{
+    GnuCOptAttributes *no_attrs = (GnuCOptAttributes *)b->nothing;
+    if (flags.is_const)
+    {
+        GnuCTreeAnonSpecifierQualifierListTypeQualifierAttributes *tmp = gnu_c_create_tree_anon_specifier_qualifier_list_type_qualifier_attributes(b->pool, (GnuCOptSpecifierQualifierList *)specs, (GnuCAnyTypeQualifier *)b->kw_const, no_attrs);
+        specs = (GnuCAnySpecifierQualifierList *)tmp;
+    }
+    if (flags.is_volatile)
+    {
+        GnuCTreeAnonSpecifierQualifierListTypeQualifierAttributes *tmp = gnu_c_create_tree_anon_specifier_qualifier_list_type_qualifier_attributes(b->pool, (GnuCOptSpecifierQualifierList *)specs, (GnuCAnyTypeQualifier *)b->kw_volatile, no_attrs);
+        specs = (GnuCAnySpecifierQualifierList *)tmp;
+    }
+    return specs;
+}
+static GnuCAnyDirectDeclarator *build_decl_direct(Builder *b, GnuCAnyDeclarator *decl)
+{
+    if (gnu_c_is_any_direct_declarator((GnuCAst *)decl))
+    {
+        return (GnuCAnyDirectDeclarator *)decl;
     }
     else
     {
-        if (!is_volatile)
-        {
-            return (C89_OptTypeQualifierList *)b->kw_const;
-        }
-        else
-        {
-            C89_AnyTypeQualifierList *c = (C89_AnyTypeQualifierList *)b->kw_const;
-            C89_AnyTypeQualifier *v = (C89_AnyTypeQualifier *)b->kw_volatile;
-            C89_TreeMultiTypeQualifierList *mtql = c89_create_tree_multi_type_qualifier_list(b->pool, c, v);
-            return (C89_OptTypeQualifierList *)mtql;
-        }
+        GnuCOptAttributes *no_attrs = (GnuCOptAttributes *)b->nothing;
+        GnuCTreeAnonLparenAttributesDeclaratorRparen *pd = gnu_c_create_tree_anon_lparen_attributes_declarator_rparen(b->pool, b->lparen, no_attrs, decl, b->rparen);
+        return (GnuCAnyDirectDeclarator *)pd;
     }
+}
+static GnuCAnyDeclarator *build_ptr(Builder *b, GnuCAnyDeclarator *decl, struct BuildTypeFlags flags)
+{
+    GnuCTreeAnonStarTypeQualifierList *ptr = gnu_c_create_tree_anon_star_type_qualifier_list(b->pool, b->star, build_tql(b, flags));
+    GnuCAnyPointer *pointer = (GnuCAnyPointer *)ptr;
+    GnuCAnyDirectDeclarator *ddecl = build_decl_direct(b, decl);
+    GnuCTreeAnonPointerDirectDeclarator *rv = gnu_c_create_tree_anon_pointer_direct_declarator(b->pool, pointer, ddecl);
+    decl = (GnuCAnyDeclarator *)rv;
+    return decl;
 }
 
-static C89_AnyDirectDeclarator *build_decl_direct(Builder *b, C89_AnyDeclarator *decl)
+static BuildTypePairDeclarator build_type_to_decl_step(Builder *b, BuildType *type, GnuCAnyDeclarator *decl)
 {
-    if (c89_is_any_direct_declarator((C89_Ast *)decl))
-    {
-        return (C89_AnyDirectDeclarator *)decl;
-    }
-    else
-    {
-        C89_TreeParenthesisDeclarator *pd = c89_create_tree_parenthesis_declarator(b->pool, b->lparen, decl, b->rparen);
-        return (C89_AnyDirectDeclarator *)pd;
-    }
-}
-static BuildTypePairDeclarator build_type_to_decl_step(Builder *b, BuildType *type, C89_AnyDeclarator *decl)
-{
-    C89_OptTypeQualifierList *tql = build_tql(b, type->is_const, type->is_volatile);
     switch (type->type)
     {
     case BTYTY_SPEC:
         {
             BuildTypePairDeclarator rv;
-            rv.sql = c89_create_tree_specifier_qualifier_list(b->pool, type->ast_spec, tql);
+            rv.specs = (GnuCAnyDeclarationSpecifiers *)build_ds(b, type->spec.ast_dspec, type->flags);
             rv.decl = decl;
             return rv;
         }
     case BTYTY_PTR:
         {
-            C89_TreePointerDeclarator *pdecl = c89_create_tree_pointer_declarator(b->pool, b->star, tql, decl);
-            decl = (C89_AnyDeclarator *)pdecl;
-            type = type->target;
+            decl = build_ptr(b, decl, type->flags);
+            type = type->ptr.element;
             return build_type_to_decl_step(b, type, decl);
         }
     case BTYTY_ARRAY:
         {
-            C89_AnyDirectDeclarator *ddecl = build_decl_direct(b, decl);
-            C89_TreeArrayDeclarator *adecl = c89_create_tree_array_declarator(b->pool, ddecl, b->lbracket, type->array_size, b->rbracket);
-            decl = (C89_AnyDeclarator *)adecl;
-            assert (!type->is_const && !type->is_volatile);
-            type = type->target;
+            GnuCAnyDirectDeclarator *ddecl = build_decl_direct(b, decl);
+            GnuCTreeAnonDirectDeclaratorArrayDeclarator *adecl = gnu_c_create_tree_anon_direct_declarator_array_declarator(b->pool, ddecl, type->array.size);
+            decl = (GnuCAnyDeclarator *)adecl;
+            assert (!type->flags.is_const && !type->flags.is_volatile);
+            type = type->array.element;
             return build_type_to_decl_step(b, type, decl);
         }
     case BTYTY_FUN:
         {
-            C89_AnyDirectDeclarator *ddecl = build_decl_direct(b, decl);
-            C89_TreeFunctionDeclarator *fdecl = c89_create_tree_function_declarator(b->pool, ddecl, b->lparen, type->args, b->rparen);
-            decl = (C89_AnyDeclarator *)fdecl;
-            assert (!type->is_const && !type->is_volatile);
-            type = type->target;
+            GnuCAnyDirectDeclarator *ddecl = build_decl_direct(b, decl);
+            GnuCTreeAnonDirectDeclaratorLparenParameterTypeListRparen *fdecl = gnu_c_create_tree_anon_direct_declarator_lparen_parameter_type_list_rparen(b->pool, ddecl, b->lparen, type->fun.args, b->rparen);
+            decl = (GnuCAnyDeclarator *)fdecl;
+            assert (!type->flags.is_const && !type->flags.is_volatile);
+            type = type->fun.ret;
             return build_type_to_decl_step(b, type, decl);
         }
     default:
         abort();
     }
 }
-static C89_OptDirectAbstractDeclarator *build_opt_abstract_decl_direct(Builder *b, C89_OptAbstractDeclarator *decl)
+static BuildTypePairStructDeclarator build_type_to_decl_struct_step(Builder *b, BuildType *type, GnuCAnyDeclarator *decl)
 {
-    if (c89_is_opt_direct_abstract_declarator((C89_Ast *)decl))
+    switch (type->type)
     {
-        return (C89_OptDirectAbstractDeclarator *)decl;
+    case BTYTY_SPEC:
+        {
+            BuildTypePairStructDeclarator rv;
+            rv.specs = build_sql(b, type->spec.ast_sql, type->flags);
+            rv.decl = decl;
+            return rv;
+        }
+    case BTYTY_PTR:
+        {
+            decl = build_ptr(b, decl, type->flags);
+            type = type->ptr.element;
+            return build_type_to_decl_struct_step(b, type, decl);
+        }
+    case BTYTY_ARRAY:
+        {
+            GnuCAnyDirectDeclarator *ddecl = build_decl_direct(b, decl);
+            GnuCTreeAnonDirectDeclaratorArrayDeclarator *adecl = gnu_c_create_tree_anon_direct_declarator_array_declarator(b->pool, ddecl, type->array.size);
+            decl = (GnuCAnyDeclarator *)adecl;
+            assert (!type->flags.is_const && !type->flags.is_volatile);
+            type = type->array.element;
+            return build_type_to_decl_struct_step(b, type, decl);
+        }
+    case BTYTY_FUN:
+        {
+            GnuCAnyDirectDeclarator *ddecl = build_decl_direct(b, decl);
+            GnuCTreeAnonDirectDeclaratorLparenParameterTypeListRparen *fdecl = gnu_c_create_tree_anon_direct_declarator_lparen_parameter_type_list_rparen(b->pool, ddecl, b->lparen, type->fun.args, b->rparen);
+            decl = (GnuCAnyDeclarator *)fdecl;
+            assert (!type->flags.is_const && !type->flags.is_volatile);
+            type = type->fun.ret;
+            return build_type_to_decl_struct_step(b, type, decl);
+        }
+    default:
+        abort();
+    }
+}
+
+static GnuCOptDirectAbstractDeclarator *build_opt_abstract_decl_direct(Builder *b, GnuCOptAbstractDeclarator *decl)
+{
+    if (gnu_c_is_opt_direct_abstract_declarator((GnuCAst *)decl))
+    {
+        return (GnuCOptDirectAbstractDeclarator *)decl;
     }
     else
     {
-        C89_AnyAbstractDeclarator *some_decl = (C89_AnyAbstractDeclarator *)decl;
-        C89_TreeParenthesisAbstractDeclarator *pad = c89_create_tree_parenthesis_abstract_declarator(b->pool, b->lparen, some_decl, b->rparen);
-        return (C89_OptDirectAbstractDeclarator *)pad;
+        GnuCOptAttributes *no_attrs = (GnuCOptAttributes *)b->nothing;
+        GnuCAnyAbstractDeclarator *some_decl = (GnuCAnyAbstractDeclarator *)decl;
+        GnuCTreeAnonLparenAttributesAbstractDeclaratorRparen *pad = gnu_c_create_tree_anon_lparen_attributes_abstract_declarator_rparen(b->pool, b->lparen, no_attrs, some_decl, b->rparen);
+        return (GnuCOptDirectAbstractDeclarator *)pad;
     }
 }
-static BuildTypePairAbstractDeclarator build_type_to_abstract_decl_step(Builder *b, BuildType *type, C89_OptAbstractDeclarator *decl)
+static BuildTypePairAbstractDeclarator build_type_to_abstract_decl_step(Builder *b, BuildType *type, GnuCOptAbstractDeclarator *decl)
 {
-    C89_OptTypeQualifierList *tql = build_tql(b, type->is_const, type->is_volatile);
     switch (type->type)
     {
     case BTYTY_SPEC:
         {
             BuildTypePairAbstractDeclarator rv;
-            rv.sql = c89_create_tree_specifier_qualifier_list(b->pool, type->ast_spec, tql);
+            rv.specs = (GnuCAnyDeclarationSpecifiers *)build_ds(b, type->spec.ast_dspec, type->flags);
             rv.decl = decl;
             return rv;
         }
     case BTYTY_PTR:
         {
-            if (c89_is_nothing((C89_Ast *)decl))
+            GnuCOptDirectAbstractDeclarator *ddecl = build_opt_abstract_decl_direct(b, decl);
+            if (gnu_c_is_nothing((GnuCAst *)ddecl))
             {
-                C89_TreeLeafPointerAbstractDeclarator *pdecl = c89_create_tree_leaf_pointer_abstract_declarator(b->pool, b->star, tql);
-                decl = (C89_OptAbstractDeclarator *)pdecl;
+                GnuCTreeAnonStarTypeQualifierList *pointer = gnu_c_create_tree_anon_star_type_qualifier_list(b->pool, b->star, build_tql(b, type->flags));
+                decl = (GnuCOptAbstractDeclarator *)pointer;
             }
             else
             {
-                C89_AnyAbstractDeclarator *tdecl = (C89_AnyAbstractDeclarator *)decl;
-                C89_TreeRecursivePointerAbstractDeclarator *pdecl = c89_create_tree_recursive_pointer_abstract_declarator(b->pool, b->star, tql, tdecl);
-                decl = (C89_OptAbstractDeclarator *)pdecl;
+                GnuCTreeAnonStarTypeQualifierList *pointer = gnu_c_create_tree_anon_star_type_qualifier_list(b->pool, b->star, build_tql(b, type->flags));
+                GnuCTreeAnonPointerDirectAbstractDeclarator *pdecl = gnu_c_create_tree_anon_pointer_direct_abstract_declarator(b->pool, (GnuCAnyPointer *)pointer, (GnuCAnyDirectAbstractDeclarator *)ddecl);
+                decl = (GnuCOptAbstractDeclarator *)pdecl;
             }
-            type = type->target;
+            type = type->ptr.element;
             return build_type_to_abstract_decl_step(b, type, decl);
         }
     case BTYTY_ARRAY:
         {
-            C89_OptDirectAbstractDeclarator *odadecl = build_opt_abstract_decl_direct(b, decl);
-            C89_TreeArrayAbstractDeclarator *adecl = c89_create_tree_array_abstract_declarator(b->pool, odadecl, b->lbracket, type->array_size, b->rbracket);
-            decl = (C89_OptAbstractDeclarator *)adecl;
-            assert (!type->is_const && !type->is_volatile);
-            type = type->target;
+            GnuCOptDirectAbstractDeclarator *odadecl = build_opt_abstract_decl_direct(b, decl);
+            GnuCTreeAnonDirectAbstractDeclaratorArrayDeclarator *adecl = gnu_c_create_tree_anon_direct_abstract_declarator_array_declarator(b->pool, odadecl, type->array.size);
+            decl = (GnuCOptAbstractDeclarator *)adecl;
+            assert (!type->flags.is_const && !type->flags.is_volatile);
+            type = type->array.element;
             return build_type_to_abstract_decl_step(b, type, decl);
         }
     case BTYTY_FUN:
         {
-            C89_OptDirectAbstractDeclarator *odadecl = build_opt_abstract_decl_direct(b, decl);
-            C89_TreeFunctionAbstractDeclarator *fdecl = c89_create_tree_function_abstract_declarator(b->pool, odadecl, b->lparen, type->args, b->rparen);
-            decl = (C89_OptAbstractDeclarator *)fdecl;
-            assert (!type->is_const && !type->is_volatile);
-            type = type->target;
+            GnuCOptDirectAbstractDeclarator *odadecl = build_opt_abstract_decl_direct(b, decl);
+            GnuCTreeAnonDirectAbstractDeclaratorLparenParameterTypeListRparen *fdecl = gnu_c_create_tree_anon_direct_abstract_declarator_lparen_parameter_type_list_rparen(b->pool, odadecl, b->lparen, (GnuCOptParameterTypeList *)type->fun.args, b->rparen);
+            decl = (GnuCOptAbstractDeclarator *)fdecl;
+            assert (!type->flags.is_const && !type->flags.is_volatile);
+            type = type->fun.ret;
             return build_type_to_abstract_decl_step(b, type, decl);
         }
     default:
         abort();
     }
 }
-BuildTypePairDeclarator build_type_to_decl(Builder *b, BuildType *type, const char *name)
+static BuildTypePairAbstractStructDeclarator build_type_to_abstract_decl_struct_step(Builder *b, BuildType *type, GnuCOptAbstractDeclarator *decl)
 {
-    C89_AtomIdentifier *id = build_id(b, name);
-    C89_AnyDeclarator *decl = (C89_AnyDeclarator *)id;
-    return build_type_to_decl_step(b, type, decl);
-}
-BuildTypePairAbstractDeclarator build_type_to_decl_abstract(Builder *b, BuildType *type)
-{
-    C89_OptAbstractDeclarator *decl = (C89_OptAbstractDeclarator *)b->nothing;
-    return build_type_to_abstract_decl_step(b, type, decl);
+    switch (type->type)
+    {
+    case BTYTY_SPEC:
+        {
+            BuildTypePairAbstractStructDeclarator rv;
+            rv.specs = build_sql(b, type->spec.ast_sql, type->flags);
+            rv.decl = decl;
+            return rv;
+        }
+    case BTYTY_PTR:
+        {
+            GnuCOptDirectAbstractDeclarator *ddecl = build_opt_abstract_decl_direct(b, decl);
+            if (gnu_c_is_nothing((GnuCAst *)ddecl))
+            {
+                GnuCTreeAnonStarTypeQualifierList *pointer = gnu_c_create_tree_anon_star_type_qualifier_list(b->pool, b->star, build_tql(b, type->flags));
+                decl = (GnuCOptAbstractDeclarator *)pointer;
+            }
+            else
+            {
+                GnuCTreeAnonStarTypeQualifierList *pointer = gnu_c_create_tree_anon_star_type_qualifier_list(b->pool, b->star, build_tql(b, type->flags));
+                GnuCTreeAnonPointerDirectAbstractDeclarator *pdecl = gnu_c_create_tree_anon_pointer_direct_abstract_declarator(b->pool, (GnuCAnyPointer *)pointer, (GnuCAnyDirectAbstractDeclarator *)ddecl);
+                decl = (GnuCOptAbstractDeclarator *)pdecl;
+            }
+            type = type->ptr.element;
+            return build_type_to_abstract_decl_struct_step(b, type, decl);
+        }
+    case BTYTY_ARRAY:
+        {
+            GnuCOptDirectAbstractDeclarator *odadecl = build_opt_abstract_decl_direct(b, decl);
+            GnuCTreeAnonDirectAbstractDeclaratorArrayDeclarator *adecl = gnu_c_create_tree_anon_direct_abstract_declarator_array_declarator(b->pool, odadecl, type->array.size);
+            decl = (GnuCOptAbstractDeclarator *)adecl;
+            assert (!type->flags.is_const && !type->flags.is_volatile);
+            type = type->array.element;
+            return build_type_to_abstract_decl_struct_step(b, type, decl);
+        }
+    case BTYTY_FUN:
+        {
+            GnuCOptDirectAbstractDeclarator *odadecl = build_opt_abstract_decl_direct(b, decl);
+            GnuCTreeAnonDirectAbstractDeclaratorLparenParameterTypeListRparen *fdecl = gnu_c_create_tree_anon_direct_abstract_declarator_lparen_parameter_type_list_rparen(b->pool, odadecl, b->lparen, (GnuCOptParameterTypeList *)type->fun.args, b->rparen);
+            decl = (GnuCOptAbstractDeclarator *)fdecl;
+            assert (!type->flags.is_const && !type->flags.is_volatile);
+            type = type->fun.ret;
+            return build_type_to_abstract_decl_struct_step(b, type, decl);
+        }
+    default:
+        abort();
+    }
 }
 
-C89_AnyStatement *build_stmt_to_stmt(Builder *b, BuildStatement *stmt)
+static GnuCAnyDeclarationSpecifiers *head_specs(Builder *b, size_t nscs, BuildStorageClass **scs, GnuCAnyDeclarationSpecifiers *tspecs)
+{
+    GnuCOptHeadDeclarationSpecifiers *hspecs = (GnuCOptHeadDeclarationSpecifiers *)b->nothing;
+    GnuCOptAttributes *no_attrs = (GnuCOptAttributes *)b->nothing;
+    if (!nscs)
+    {
+        return tspecs;
+    }
+    while (nscs--)
+    {
+        hspecs = (GnuCOptHeadDeclarationSpecifiers *)gnu_c_create_tree_head_declaration_specifiers(b->pool, hspecs, scs[0]->ast_scs, no_attrs);
+        scs++;
+    }
+    return (GnuCAnyDeclarationSpecifiers *)gnu_c_create_tree_anon_head_declaration_specifiers_or_attributes_tail_declaration_specifiers(b->pool, (GnuCAnyHeadDeclarationSpecifiersOrAttributes *)hspecs, (GnuCAnyTailDeclarationSpecifiers *)tspecs);
+}
+BuildTypePairDeclarator build_type_to_decl(Builder *b, size_t nscs, BuildStorageClass **scs, BuildType *type, const char *name)
+{
+    GnuCAtomIdentifier *id = build_id(b, name);
+    GnuCAnyDeclarator *decl = (GnuCAnyDeclarator *)id;
+    BuildTypePairDeclarator rv = build_type_to_decl_step(b, type, decl);
+    rv.specs = head_specs(b, nscs, scs, rv.specs);
+    return rv;
+}
+
+BuildTypePairAbstractDeclarator build_type_to_decl_abstract(Builder *b, size_t nscs, BuildStorageClass **scs, BuildType *type)
+{
+    GnuCOptAbstractDeclarator *decl = (GnuCOptAbstractDeclarator *)b->nothing;
+    BuildTypePairAbstractDeclarator rv = build_type_to_abstract_decl_step(b, type, decl);
+    rv.specs = head_specs(b, nscs, scs, rv.specs);
+    return rv;
+}
+
+BuildTypePairStructDeclarator build_type_to_decl_struct(Builder *b, BuildType *type, const char *name)
+{
+    GnuCAtomIdentifier *id = build_id(b, name);
+    GnuCAnyDeclarator *decl = (GnuCAnyDeclarator *)id;
+    return build_type_to_decl_struct_step(b, type, decl);
+}
+BuildTypePairAbstractStructDeclarator build_type_to_decl_struct_abstract(Builder *b, BuildType *type)
+{
+    GnuCOptAbstractDeclarator *decl = (GnuCOptAbstractDeclarator *)b->nothing;
+    return build_type_to_abstract_decl_struct_step(b, type, decl);
+}
+
+GnuCAnyBlockItem *build_stmt_to_stmt(Builder *b, BuildStatement *stmt)
+{
+    assert (stmt->ast_ext == NULL);
+    assert (stmt->ast_labels != NULL);
+    assert (stmt->ast_unlabeled != NULL);
+    assert (gnu_c_is_any_statement((GnuCAst *)stmt->ast_unlabeled));
+    if (stmt->ast_labels != (GnuCOptLabels *)b->nothing)
+    {
+        GnuCTreeAnonLabelsUnlabeledStatement *rv = gnu_c_create_tree_anon_labels_unlabeled_statement(b->pool, (GnuCTreeLabels *)stmt->ast_labels, (GnuCAnyUnlabeledStatement *)stmt->ast_unlabeled);
+        return (GnuCAnyBlockItem *)rv;
+    }
+    return (GnuCAnyBlockItem *)stmt->ast_unlabeled;
+}
+GnuCTreeCompoundStatement *build_stmt_to_compound(Builder *b, BuildStatement *stmt)
+{
+    assert (stmt->ast_ext == NULL);
+    assert (stmt->ast_labels != NULL);
+    assert (stmt->ast_unlabeled != NULL);
+    assert (gnu_c_is_any_statement((GnuCAst *)stmt->ast_unlabeled));
+    if (stmt->ast_labels == (GnuCOptLabels *)b->nothing)
+    {
+        if (gnu_c_is_tree_compound_statement((GnuCAst *)stmt->ast_unlabeled))
+        {
+            return (GnuCTreeCompoundStatement *)stmt->ast_unlabeled;
+        }
+    }
+
+    {
+        GnuCOptLabelDeclarations *no_labels = (GnuCOptLabelDeclarations *)b->nothing;
+        GnuCOptBlockItemList *stmts = (GnuCOptBlockItemList *)build_stmt_to_stmt(b, stmt);
+        return gnu_c_create_tree_compound_statement(b->pool, b->lbrace, no_labels, stmts, b->rbrace);
+    }
+}
+GnuCAnyStatement *build_stmt_to_else_body(Builder *b, BuildStatement *stmt)
+{
+    GnuCAnyStatement *ast_stmt = (GnuCAnyStatement *)stmt->ast_unlabeled;
+    GnuCAst *ast = (GnuCAst *)ast_stmt;
+    assert (stmt->ast_ext == NULL);
+    assert (stmt->ast_labels != NULL);
+    assert (stmt->ast_unlabeled != NULL);
+    if (stmt->ast_labels == (GnuCOptLabels *)b->nothing)
+    {
+        if (gnu_c_is_tree_if_statement(ast))
+        {
+            return ast_stmt;
+        }
+        if (gnu_c_is_tree_if_else_statement(ast))
+        {
+            return ast_stmt;
+        }
+    }
+    return (GnuCAnyStatement *)build_stmt_to_compound(b, stmt);
+}
+
+GnuCAnyInitializer *build_init_to_init(Builder *b, BuildInitializer *init)
 {
     (void)b;
-    assert (c89_is_any_statement((C89_Ast *)stmt->ast_stmt));
-    return (C89_AnyStatement *)stmt->ast_stmt;
-}
-C89_TreeCompoundStatement *build_stmt_to_compound(Builder *b, BuildStatement *stmt)
-{
-    if (c89_is_tree_compound_statement((C89_Ast *)stmt->ast_stmt))
-    {
-        return (C89_TreeCompoundStatement *)stmt->ast_stmt;
-    }
-    else
-    {
-        C89_OptDeclarationList *decls = (C89_OptDeclarationList *)b->nothing;
-        C89_OptStatementList *stmts = (C89_OptStatementList *)build_stmt_to_stmt(b, stmt);
-        return c89_create_tree_compound_statement(b->pool, b->lbrace, decls, stmts, b->rbrace);
-    }
-}
-C89_AnyStatement *build_stmt_to_else_body(Builder *b, BuildStatement *stmt)
-{
-    C89_AnyStatement *ast_stmt = stmt->ast_stmt;
-    C89_Ast *ast = (C89_Ast *)ast_stmt;
-    if (c89_is_tree_if_statement(ast))
-    {
-        return ast_stmt;
-    }
-    if (c89_is_tree_if_else_statement(ast))
-    {
-        return ast_stmt;
-    }
-    return (C89_AnyStatement *)build_stmt_to_compound(b, stmt);
+    assert (gnu_c_is_any_initializer((GnuCAst *)init->ast_init));
+    return (GnuCAnyInitializer *)init->ast_init;
 }
 
-C89_AnyInitializer *build_init_to_init(Builder *b, BuildInitializer *init)
+BuildExpression *build_expr_from_primary(Builder *b, GnuCAnyPrimaryExpression *expr)
+{
+    assert (gnu_c_is_any_primary_expression((GnuCAst *)expr));
+    return build_expr_ast(b, (GnuCAnyExprList *)expr);
+}
+BuildExpression *build_expr_from_postfix(Builder *b, GnuCAnyPostfixExpression *expr)
+{
+    assert (gnu_c_is_any_postfix_expression((GnuCAst *)expr));
+    return build_expr_ast(b, (GnuCAnyExprList *)expr);
+}
+BuildExpression *build_expr_from_cast(Builder *b, GnuCAnyCastExpression *expr)
+{
+    assert (gnu_c_is_any_cast_expression((GnuCAst *)expr));
+    return build_expr_ast(b, (GnuCAnyExprList *)expr);
+}
+BuildExpression *build_expr_from_unary(Builder *b, GnuCAnyUnaryExpression *expr)
+{
+    assert (gnu_c_is_any_unary_expression((GnuCAst *)expr));
+    return build_expr_ast(b, (GnuCAnyExprList *)expr);
+}
+BuildExpression *build_expr_from_mul(Builder *b, GnuCAnyMultiplicativeExpression *expr)
+{
+    assert (gnu_c_is_any_multiplicative_expression((GnuCAst *)expr));
+    return build_expr_ast(b, (GnuCAnyExprList *)expr);
+}
+BuildExpression *build_expr_from_add(Builder *b, GnuCAnyAdditiveExpression *expr)
+{
+    assert (gnu_c_is_any_additive_expression((GnuCAst *)expr));
+    return build_expr_ast(b, (GnuCAnyExprList *)expr);
+}
+BuildExpression *build_expr_from_shift(Builder *b, GnuCAnyShiftExpression *expr)
+{
+    assert (gnu_c_is_any_shift_expression((GnuCAst *)expr));
+    return build_expr_ast(b, (GnuCAnyExprList *)expr);
+}
+BuildExpression *build_expr_from_rel(Builder *b, GnuCAnyRelationalExpression *expr)
+{
+    assert (gnu_c_is_any_relational_expression((GnuCAst *)expr));
+    return build_expr_ast(b, (GnuCAnyExprList *)expr);
+}
+BuildExpression *build_expr_from_eq(Builder *b, GnuCAnyEqualityExpression *expr)
+{
+    assert (gnu_c_is_any_equality_expression((GnuCAst *)expr));
+    return build_expr_ast(b, (GnuCAnyExprList *)expr);
+}
+BuildExpression *build_expr_from_bit_and(Builder *b, GnuCAnyAndExpression *expr)
+{
+    assert (gnu_c_is_any_and_expression((GnuCAst *)expr));
+    return build_expr_ast(b, (GnuCAnyExprList *)expr);
+}
+BuildExpression *build_expr_from_bit_xor(Builder *b, GnuCAnyExclusiveOrExpression *expr)
+{
+    assert (gnu_c_is_any_exclusive_or_expression((GnuCAst *)expr));
+    return build_expr_ast(b, (GnuCAnyExprList *)expr);
+}
+BuildExpression *build_expr_from_bit_or(Builder *b, GnuCAnyInclusiveOrExpression *expr)
+{
+    assert (gnu_c_is_any_inclusive_or_expression((GnuCAst *)expr));
+    return build_expr_ast(b, (GnuCAnyExprList *)expr);
+}
+BuildExpression *build_expr_from_log_and(Builder *b, GnuCAnyLogicalAndExpression *expr)
+{
+    assert (gnu_c_is_any_logical_and_expression((GnuCAst *)expr));
+    return build_expr_ast(b, (GnuCAnyExprList *)expr);
+}
+BuildExpression *build_expr_from_log_or(Builder *b, GnuCAnyLogicalOrExpression *expr)
+{
+    assert (gnu_c_is_any_logical_or_expression((GnuCAst *)expr));
+    return build_expr_ast(b, (GnuCAnyExprList *)expr);
+}
+BuildExpression *build_expr_from_conditional(Builder *b, GnuCAnyConditionalExpression *expr)
+{
+    assert (gnu_c_is_any_conditional_expression((GnuCAst *)expr));
+    return build_expr_ast(b, (GnuCAnyExprList *)expr);
+}
+BuildExpression *build_expr_from_assignment(Builder *b, GnuCAnyAssignmentExpression *expr)
+{
+    assert (gnu_c_is_any_assignment_expression((GnuCAst *)expr));
+    return build_expr_ast(b, (GnuCAnyExprList *)expr);
+}
+BuildExpression *build_expr_from_comma(Builder *b, GnuCAnyExprList *expr)
+{
+    assert (gnu_c_is_any_expr_list((GnuCAst *)expr));
+    return build_expr_ast(b, (GnuCAnyExprList *)expr);
+}
+
+static GnuCTreeAnonLparenExprListRparen *gnu_c_expr_parenthesize(Builder *b, BuildExpression *expr)
+{
+    GnuCAnyExprList *comma = build_expr_to_comma(b, expr);
+    return gnu_c_create_tree_anon_lparen_expr_list_rparen(b->pool, b->lparen, comma, b->rparen);
+}
+GnuCAnyPrimaryExpression *build_expr_to_primary(Builder *b, BuildExpression *expr)
+{
+    if (gnu_c_is_any_primary_expression((GnuCAst *)expr->ast_expr))
+        return (GnuCAnyPrimaryExpression *)expr->ast_expr;
+    return (GnuCAnyPrimaryExpression *)gnu_c_expr_parenthesize(b, expr);
+}
+GnuCAnyPostfixExpression *build_expr_to_postfix(Builder *b, BuildExpression *expr)
+{
+    if (gnu_c_is_any_postfix_expression((GnuCAst *)expr->ast_expr))
+        return (GnuCAnyPostfixExpression *)expr->ast_expr;
+    return (GnuCAnyPostfixExpression *)gnu_c_expr_parenthesize(b, expr);
+}
+GnuCAnyCastExpression *build_expr_to_cast(Builder *b, BuildExpression *expr)
+{
+    if (gnu_c_is_any_cast_expression((GnuCAst *)expr->ast_expr))
+        return (GnuCAnyCastExpression *)expr->ast_expr;
+    return (GnuCAnyCastExpression *)gnu_c_expr_parenthesize(b, expr);
+}
+GnuCAnyUnaryExpression *build_expr_to_unary(Builder *b, BuildExpression *expr)
+{
+    if (gnu_c_is_any_unary_expression((GnuCAst *)expr->ast_expr))
+        return (GnuCAnyUnaryExpression *)expr->ast_expr;
+    return (GnuCAnyUnaryExpression *)gnu_c_expr_parenthesize(b, expr);
+}
+GnuCAnyMultiplicativeExpression *build_expr_to_mul(Builder *b, BuildExpression *expr)
+{
+    if (gnu_c_is_any_multiplicative_expression((GnuCAst *)expr->ast_expr))
+        return (GnuCAnyMultiplicativeExpression *)expr->ast_expr;
+    return (GnuCAnyMultiplicativeExpression *)gnu_c_expr_parenthesize(b, expr);
+}
+GnuCAnyAdditiveExpression *build_expr_to_add(Builder *b, BuildExpression *expr)
+{
+    if (gnu_c_is_any_additive_expression((GnuCAst *)expr->ast_expr))
+        return (GnuCAnyAdditiveExpression *)expr->ast_expr;
+    return (GnuCAnyAdditiveExpression *)gnu_c_expr_parenthesize(b, expr);
+}
+GnuCAnyShiftExpression *build_expr_to_shift(Builder *b, BuildExpression *expr)
+{
+    if (gnu_c_is_any_shift_expression((GnuCAst *)expr->ast_expr))
+        return (GnuCAnyShiftExpression *)expr->ast_expr;
+    return (GnuCAnyShiftExpression *)gnu_c_expr_parenthesize(b, expr);
+}
+GnuCAnyRelationalExpression *build_expr_to_rel(Builder *b, BuildExpression *expr)
+{
+    if (gnu_c_is_any_relational_expression((GnuCAst *)expr->ast_expr))
+        return (GnuCAnyRelationalExpression *)expr->ast_expr;
+    return (GnuCAnyRelationalExpression *)gnu_c_expr_parenthesize(b, expr);
+}
+GnuCAnyEqualityExpression *build_expr_to_eq(Builder *b, BuildExpression *expr)
+{
+    if (gnu_c_is_any_equality_expression((GnuCAst *)expr->ast_expr))
+        return (GnuCAnyEqualityExpression *)expr->ast_expr;
+    return (GnuCAnyEqualityExpression *)gnu_c_expr_parenthesize(b, expr);
+}
+GnuCAnyAndExpression *build_expr_to_bit_and(Builder *b, BuildExpression *expr)
+{
+    if (gnu_c_is_any_and_expression((GnuCAst *)expr->ast_expr))
+        return (GnuCAnyAndExpression *)expr->ast_expr;
+    return (GnuCAnyAndExpression *)gnu_c_expr_parenthesize(b, expr);
+}
+GnuCAnyExclusiveOrExpression *build_expr_to_bit_xor(Builder *b, BuildExpression *expr)
+{
+    if (gnu_c_is_any_exclusive_or_expression((GnuCAst *)expr->ast_expr))
+        return (GnuCAnyExclusiveOrExpression *)expr->ast_expr;
+    return (GnuCAnyExclusiveOrExpression *)gnu_c_expr_parenthesize(b, expr);
+}
+GnuCAnyInclusiveOrExpression *build_expr_to_bit_or(Builder *b, BuildExpression *expr)
+{
+    if (gnu_c_is_any_inclusive_or_expression((GnuCAst *)expr->ast_expr))
+        return (GnuCAnyInclusiveOrExpression *)expr->ast_expr;
+    return (GnuCAnyInclusiveOrExpression *)gnu_c_expr_parenthesize(b, expr);
+}
+GnuCAnyLogicalAndExpression *build_expr_to_log_and(Builder *b, BuildExpression *expr)
+{
+    if (gnu_c_is_any_logical_and_expression((GnuCAst *)expr->ast_expr))
+        return (GnuCAnyLogicalAndExpression *)expr->ast_expr;
+    return (GnuCAnyLogicalAndExpression *)gnu_c_expr_parenthesize(b, expr);
+}
+GnuCAnyLogicalOrExpression *build_expr_to_log_or(Builder *b, BuildExpression *expr)
+{
+    if (gnu_c_is_any_logical_or_expression((GnuCAst *)expr->ast_expr))
+        return (GnuCAnyLogicalOrExpression *)expr->ast_expr;
+    return (GnuCAnyLogicalOrExpression *)gnu_c_expr_parenthesize(b, expr);
+}
+GnuCAnyConditionalExpression *build_expr_to_conditional(Builder *b, BuildExpression *expr)
+{
+    if (gnu_c_is_any_conditional_expression((GnuCAst *)expr->ast_expr))
+        return (GnuCAnyConditionalExpression *)expr->ast_expr;
+    return (GnuCAnyConditionalExpression *)gnu_c_expr_parenthesize(b, expr);
+}
+GnuCAnyAssignmentExpression *build_expr_to_assignment(Builder *b, BuildExpression *expr)
+{
+    if (gnu_c_is_any_assignment_expression((GnuCAst *)expr->ast_expr))
+        return (GnuCAnyAssignmentExpression *)expr->ast_expr;
+    return (GnuCAnyAssignmentExpression *)gnu_c_expr_parenthesize(b, expr);
+}
+GnuCAnyExprList *build_expr_to_comma(Builder *b, BuildExpression *expr)
 {
     (void)b;
-    assert (c89_is_any_initializer((C89_Ast *)init->ast_init));
-    return (C89_AnyInitializer *)init->ast_init;
-}
-
-BuildExpression *build_expr_from_primary(Builder *b, C89_AnyPrimaryExpression *expr)
-{
-    assert (c89_is_any_primary_expression((C89_Ast *)expr));
-    return build_expr_ast(b, (C89_AnyCommaExpression *)expr);
-}
-BuildExpression *build_expr_from_postfix(Builder *b, C89_AnyPostfixExpression *expr)
-{
-    assert (c89_is_any_postfix_expression((C89_Ast *)expr));
-    return build_expr_ast(b, (C89_AnyCommaExpression *)expr);
-}
-BuildExpression *build_expr_from_unary(Builder *b, C89_AnyUnaryExpression *expr)
-{
-    assert (c89_is_any_unary_expression((C89_Ast *)expr));
-    return build_expr_ast(b, (C89_AnyCommaExpression *)expr);
-}
-BuildExpression *build_expr_from_mul(Builder *b, C89_AnyMultiplicativeExpression *expr)
-{
-    assert (c89_is_any_multiplicative_expression((C89_Ast *)expr));
-    return build_expr_ast(b, (C89_AnyCommaExpression *)expr);
-}
-BuildExpression *build_expr_from_add(Builder *b, C89_AnyAdditiveExpression *expr)
-{
-    assert (c89_is_any_additive_expression((C89_Ast *)expr));
-    return build_expr_ast(b, (C89_AnyCommaExpression *)expr);
-}
-BuildExpression *build_expr_from_shift(Builder *b, C89_AnyShiftExpression *expr)
-{
-    assert (c89_is_any_shift_expression((C89_Ast *)expr));
-    return build_expr_ast(b, (C89_AnyCommaExpression *)expr);
-}
-BuildExpression *build_expr_from_rel(Builder *b, C89_AnyRelationalExpression *expr)
-{
-    assert (c89_is_any_relational_expression((C89_Ast *)expr));
-    return build_expr_ast(b, (C89_AnyCommaExpression *)expr);
-}
-BuildExpression *build_expr_from_eq(Builder *b, C89_AnyEqualityExpression *expr)
-{
-    assert (c89_is_any_equality_expression((C89_Ast *)expr));
-    return build_expr_ast(b, (C89_AnyCommaExpression *)expr);
-}
-BuildExpression *build_expr_from_bit_and(Builder *b, C89_AnyAndExpression *expr)
-{
-    assert (c89_is_any_and_expression((C89_Ast *)expr));
-    return build_expr_ast(b, (C89_AnyCommaExpression *)expr);
-}
-BuildExpression *build_expr_from_bit_xor(Builder *b, C89_AnyExclusiveOrExpression *expr)
-{
-    assert (c89_is_any_exclusive_or_expression((C89_Ast *)expr));
-    return build_expr_ast(b, (C89_AnyCommaExpression *)expr);
-}
-BuildExpression *build_expr_from_bit_or(Builder *b, C89_AnyInclusiveOrExpression *expr)
-{
-    assert (c89_is_any_inclusive_or_expression((C89_Ast *)expr));
-    return build_expr_ast(b, (C89_AnyCommaExpression *)expr);
-}
-BuildExpression *build_expr_from_log_and(Builder *b, C89_AnyLogicalAndExpression *expr)
-{
-    assert (c89_is_any_logical_and_expression((C89_Ast *)expr));
-    return build_expr_ast(b, (C89_AnyCommaExpression *)expr);
-}
-BuildExpression *build_expr_from_log_or(Builder *b, C89_AnyLogicalOrExpression *expr)
-{
-    assert (c89_is_any_logical_or_expression((C89_Ast *)expr));
-    return build_expr_ast(b, (C89_AnyCommaExpression *)expr);
-}
-BuildExpression *build_expr_from_conditional(Builder *b, C89_AnyConditionalExpression *expr)
-{
-    assert (c89_is_any_conditional_expression((C89_Ast *)expr));
-    return build_expr_ast(b, (C89_AnyCommaExpression *)expr);
-}
-BuildExpression *build_expr_from_assignment(Builder *b, C89_AnyAssignmentExpression *expr)
-{
-    assert (c89_is_any_assignment_expression((C89_Ast *)expr));
-    return build_expr_ast(b, (C89_AnyCommaExpression *)expr);
-}
-BuildExpression *build_expr_from_comma(Builder *b, C89_AnyCommaExpression *expr)
-{
-    assert (c89_is_any_comma_expression((C89_Ast *)expr));
-    return build_expr_ast(b, (C89_AnyCommaExpression *)expr);
-}
-
-static C89_TreeParenthesisExpression *c89_expr_parenthesize(Builder *b, BuildExpression *expr)
-{
-    C89_AnyCommaExpression *comma = build_expr_to_comma(b, expr);
-    return c89_create_tree_parenthesis_expression(b->pool, b->lparen, comma, b->rparen);
-}
-C89_AnyPrimaryExpression *build_expr_to_primary(Builder *b, BuildExpression *expr)
-{
-    if (c89_is_any_primary_expression((C89_Ast *)expr->ast_expr))
-        return (C89_AnyPrimaryExpression *)expr->ast_expr;
-    return (C89_AnyPrimaryExpression *)c89_expr_parenthesize(b, expr);
-}
-C89_AnyPostfixExpression *build_expr_to_postfix(Builder *b, BuildExpression *expr)
-{
-    if (c89_is_any_postfix_expression((C89_Ast *)expr->ast_expr))
-        return (C89_AnyPostfixExpression *)expr->ast_expr;
-    return (C89_AnyPostfixExpression *)c89_expr_parenthesize(b, expr);
-}
-C89_AnyUnaryExpression *build_expr_to_unary(Builder *b, BuildExpression *expr)
-{
-    if (c89_is_any_unary_expression((C89_Ast *)expr->ast_expr))
-        return (C89_AnyUnaryExpression *)expr->ast_expr;
-    return (C89_AnyUnaryExpression *)c89_expr_parenthesize(b, expr);
-}
-C89_AnyMultiplicativeExpression *build_expr_to_mul(Builder *b, BuildExpression *expr)
-{
-    if (c89_is_any_multiplicative_expression((C89_Ast *)expr->ast_expr))
-        return (C89_AnyMultiplicativeExpression *)expr->ast_expr;
-    return (C89_AnyMultiplicativeExpression *)c89_expr_parenthesize(b, expr);
-}
-C89_AnyAdditiveExpression *build_expr_to_add(Builder *b, BuildExpression *expr)
-{
-    if (c89_is_any_additive_expression((C89_Ast *)expr->ast_expr))
-        return (C89_AnyAdditiveExpression *)expr->ast_expr;
-    return (C89_AnyAdditiveExpression *)c89_expr_parenthesize(b, expr);
-}
-C89_AnyShiftExpression *build_expr_to_shift(Builder *b, BuildExpression *expr)
-{
-    if (c89_is_any_shift_expression((C89_Ast *)expr->ast_expr))
-        return (C89_AnyShiftExpression *)expr->ast_expr;
-    return (C89_AnyShiftExpression *)c89_expr_parenthesize(b, expr);
-}
-C89_AnyRelationalExpression *build_expr_to_rel(Builder *b, BuildExpression *expr)
-{
-    if (c89_is_any_relational_expression((C89_Ast *)expr->ast_expr))
-        return (C89_AnyRelationalExpression *)expr->ast_expr;
-    return (C89_AnyRelationalExpression *)c89_expr_parenthesize(b, expr);
-}
-C89_AnyEqualityExpression *build_expr_to_eq(Builder *b, BuildExpression *expr)
-{
-    if (c89_is_any_equality_expression((C89_Ast *)expr->ast_expr))
-        return (C89_AnyEqualityExpression *)expr->ast_expr;
-    return (C89_AnyEqualityExpression *)c89_expr_parenthesize(b, expr);
-}
-C89_AnyAndExpression *build_expr_to_bit_and(Builder *b, BuildExpression *expr)
-{
-    if (c89_is_any_and_expression((C89_Ast *)expr->ast_expr))
-        return (C89_AnyAndExpression *)expr->ast_expr;
-    return (C89_AnyAndExpression *)c89_expr_parenthesize(b, expr);
-}
-C89_AnyExclusiveOrExpression *build_expr_to_bit_xor(Builder *b, BuildExpression *expr)
-{
-    if (c89_is_any_exclusive_or_expression((C89_Ast *)expr->ast_expr))
-        return (C89_AnyExclusiveOrExpression *)expr->ast_expr;
-    return (C89_AnyExclusiveOrExpression *)c89_expr_parenthesize(b, expr);
-}
-C89_AnyInclusiveOrExpression *build_expr_to_bit_or(Builder *b, BuildExpression *expr)
-{
-    if (c89_is_any_inclusive_or_expression((C89_Ast *)expr->ast_expr))
-        return (C89_AnyInclusiveOrExpression *)expr->ast_expr;
-    return (C89_AnyInclusiveOrExpression *)c89_expr_parenthesize(b, expr);
-}
-C89_AnyLogicalAndExpression *build_expr_to_log_and(Builder *b, BuildExpression *expr)
-{
-    if (c89_is_any_logical_and_expression((C89_Ast *)expr->ast_expr))
-        return (C89_AnyLogicalAndExpression *)expr->ast_expr;
-    return (C89_AnyLogicalAndExpression *)c89_expr_parenthesize(b, expr);
-}
-C89_AnyLogicalOrExpression *build_expr_to_log_or(Builder *b, BuildExpression *expr)
-{
-    if (c89_is_any_logical_or_expression((C89_Ast *)expr->ast_expr))
-        return (C89_AnyLogicalOrExpression *)expr->ast_expr;
-    return (C89_AnyLogicalOrExpression *)c89_expr_parenthesize(b, expr);
-}
-C89_AnyConditionalExpression *build_expr_to_conditional(Builder *b, BuildExpression *expr)
-{
-    if (c89_is_any_conditional_expression((C89_Ast *)expr->ast_expr))
-        return (C89_AnyConditionalExpression *)expr->ast_expr;
-    return (C89_AnyConditionalExpression *)c89_expr_parenthesize(b, expr);
-}
-C89_AnyAssignmentExpression *build_expr_to_assignment(Builder *b, BuildExpression *expr)
-{
-    if (c89_is_any_assignment_expression((C89_Ast *)expr->ast_expr))
-        return (C89_AnyAssignmentExpression *)expr->ast_expr;
-    return (C89_AnyAssignmentExpression *)c89_expr_parenthesize(b, expr);
-}
-C89_AnyCommaExpression *build_expr_to_comma(Builder *b, BuildExpression *expr)
-{
-    (void)b;
-    assert (c89_is_any_comma_expression((C89_Ast *)expr->ast_expr));
-    return (C89_AnyCommaExpression *)expr->ast_expr;
+    assert (gnu_c_is_any_expr_list((GnuCAst *)expr->ast_expr));
+    return (GnuCAnyExprList *)expr->ast_expr;
 }

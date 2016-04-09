@@ -18,143 +18,159 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "c89.gen.h"
+#include "gnu-c.gen.h"
 
 
 struct Builder
 {
     Pool *pool;
-    C89_Nothing *nothing;
+    GnuCNothing *nothing;
 
     /* grouping */
-    C89_SymArrow *arrow;
-    C89_SymComma *comma;
-    C89_SymDot *dot;
-    C89_SymEllipsis *ellipsis;
-    C89_SymLbrace *lbrace;
-    C89_SymLbracket *lbracket;
-    C89_SymLparen *lparen;
-    C89_SymRbrace *rbrace;
-    C89_SymRbracket *rbracket;
-    C89_SymRparen *rparen;
-    C89_SymSemicolon *semicolon;
+    GnuCSymArrow *arrow;
+    GnuCSymComma *comma;
+    GnuCSymDot *dot;
+    GnuCSymEllipsis *ellipsis;
+    GnuCSymLbrace *lbrace;
+    GnuCSymLbracket *lbracket;
+    GnuCSymLparen *lparen;
+    GnuCSymRbrace *rbrace;
+    GnuCSymRbracket *rbracket;
+    GnuCSymRparen *rparen;
+    GnuCSymSemicolon *semicolon;
 
     /* operators */
-    C89_SymAmpersand *ampersand;
-    C89_SymBang *bang;
-    C89_SymCaret *caret;
-    C89_SymColon *colon;
-    C89_SymDecr *decr;
-    C89_SymEq *eq;
-    C89_SymGe *ge;
-    C89_SymGt *gt;
-    C89_SymIncr *incr;
-    C89_SymLe *le;
-    C89_SymLogicalAnd *logical_and;
-    C89_SymLogicalOr *logical_or;
-    C89_SymLshift *lshift;
-    C89_SymLt *lt;
-    C89_SymMinus *minus;
-    C89_SymNe *ne;
-    C89_SymPercent *percent;
-    C89_SymPipe *pipe;
-    C89_SymPlus *plus;
-    C89_SymQuery *query;
-    C89_SymRshift *rshift;
-    C89_SymSlash *slash;
-    C89_SymStar *star;
-    C89_SymTilde *tilde;
+    GnuCSymAmpersand *ampersand;
+    GnuCSymBang *bang;
+    GnuCSymCaret *caret;
+    GnuCSymColon *colon;
+    GnuCSymDecr *decr;
+    GnuCSymEq *eq;
+    GnuCSymGe *ge;
+    GnuCSymGt *gt;
+    GnuCSymIncr *incr;
+    GnuCSymLe *le;
+    GnuCSymLogicalAnd *logical_and;
+    GnuCSymLogicalOr *logical_or;
+    GnuCSymLshift *lshift;
+    GnuCSymLt *lt;
+    GnuCSymMinus *minus;
+    GnuCSymNe *ne;
+    GnuCSymPercent *percent;
+    GnuCSymPipe *pipe;
+    GnuCSymPlus *plus;
+    GnuCSymQuery *query;
+    GnuCSymRshift *rshift;
+    GnuCSymSlash *slash;
+    GnuCSymStar *star;
+    GnuCSymTilde *tilde;
 
     /* assignment operators */
-    C89_SymAssign *assign;
-    C89_SymAmpersandAssign *ampersand_assign;
-    C89_SymCaretAssign *caret_assign;
-    C89_SymLshiftAssign *lshift_assign;
-    C89_SymMinusAssign *minus_assign;
-    C89_SymPercentAssign *percent_assign;
-    C89_SymPipeAssign *pipe_assign;
-    C89_SymPlusAssign *plus_assign;
-    C89_SymRshiftAssign *rshift_assign;
-    C89_SymSlashAssign *slash_assign;
-    C89_SymStarAssign *star_assign;
+    GnuCSymAssign *assign;
+    GnuCSymAmpersandAssign *ampersand_assign;
+    GnuCSymCaretAssign *caret_assign;
+    GnuCSymLshiftAssign *lshift_assign;
+    GnuCSymMinusAssign *minus_assign;
+    GnuCSymPercentAssign *percent_assign;
+    GnuCSymPipeAssign *pipe_assign;
+    GnuCSymPlusAssign *plus_assign;
+    GnuCSymRshiftAssign *rshift_assign;
+    GnuCSymSlashAssign *slash_assign;
+    GnuCSymStarAssign *star_assign;
 
     /* keywords */
-    C89_KwBreak *kw_break;
-    C89_KwCase *kw_case;
-    C89_KwConst *kw_const;
-    C89_KwContinue *kw_continue;
-    C89_KwDefault *kw_default;
-    C89_KwDo *kw_do;
-    C89_KwElse *kw_else;
-    C89_KwEnum *kw_enum;
-    C89_KwExtern *kw_extern;
-    C89_KwFor *kw_for;
-    C89_KwGoto *kw_goto;
-    C89_KwIf *kw_if;
-    C89_KwRegister *kw_register;
-    C89_KwReturn *kw_return;
-    C89_KwSizeof *kw_sizeof;
-    C89_KwStatic *kw_static;
-    C89_KwStruct *kw_struct;
-    C89_KwSwitch *kw_switch;
-    C89_KwTypedef *kw_typedef;
-    C89_KwUnion *kw_union;
-    C89_KwVolatile *kw_volatile;
-    C89_KwWhile *kw_while;
+    GnuCKwBreak *kw_break;
+    GnuCKwCase *kw_case;
+    GnuCKwConst *kw_const;
+    GnuCKwContinue *kw_continue;
+    GnuCKwDefault *kw_default;
+    GnuCKwDo *kw_do;
+    GnuCKwElse *kw_else;
+    GnuCKwEnum *kw_enum;
+    GnuCKwExtern *kw_extern;
+    GnuCKwFor *kw_for;
+    GnuCKwGoto *kw_goto;
+    GnuCKwIf *kw_if;
+    GnuCKwRegister *kw_register;
+    GnuCKwReturn *kw_return;
+    GnuCKwSizeof *kw_sizeof;
+    GnuCKwStatic *kw_static;
+    GnuCKwStruct *kw_struct;
+    GnuCKwSwitch *kw_switch;
+    GnuCKwTypedef *kw_typedef;
+    GnuCKwUnion *kw_union;
+    GnuCKwVolatile *kw_volatile;
+    GnuCKwWhile *kw_while;
 
-    /* types */
-    C89_AnyTypeSpecifier *ty_void;
-    C89_AnyTypeSpecifier *ty_char;
-    C89_AnyTypeSpecifier *ty_signed_char;
-    C89_AnyTypeSpecifier *ty_unsigned_char;
+    /* types (in non-struct declarations) */
+    GnuCAnyTailDeclarationSpecifiers *ty_void_ds;
+    GnuCAnyTailDeclarationSpecifiers *ty_char_ds;
+    GnuCAnyTailDeclarationSpecifiers *ty_signed_char_ds;
+    GnuCAnyTailDeclarationSpecifiers *ty_unsigned_char_ds;
 
-    C89_AnyTypeSpecifier *ty_signed_short;
-    C89_AnyTypeSpecifier *ty_unsigned_short;
-    C89_AnyTypeSpecifier *ty_signed_int;
-    C89_AnyTypeSpecifier *ty_unsigned_int;
-    C89_AnyTypeSpecifier *ty_signed_long;
-    C89_AnyTypeSpecifier *ty_unsigned_long;
-    C89_AnyTypeSpecifier *ty_signed_long_long;
-    C89_AnyTypeSpecifier *ty_unsigned_long_long;
+    GnuCAnyTailDeclarationSpecifiers *ty_signed_short_ds;
+    GnuCAnyTailDeclarationSpecifiers *ty_unsigned_short_ds;
+    GnuCAnyTailDeclarationSpecifiers *ty_signed_int_ds;
+    GnuCAnyTailDeclarationSpecifiers *ty_unsigned_int_ds;
+    GnuCAnyTailDeclarationSpecifiers *ty_signed_long_ds;
+    GnuCAnyTailDeclarationSpecifiers *ty_unsigned_long_ds;
+    GnuCAnyTailDeclarationSpecifiers *ty_signed_long_long_ds;
+    GnuCAnyTailDeclarationSpecifiers *ty_unsigned_long_long_ds;
 
-    C89_AnyTypeSpecifier *ty_float;
-    C89_AnyTypeSpecifier *ty_double;
-    C89_AnyTypeSpecifier *ty_long_double;
+    GnuCAnyTailDeclarationSpecifiers *ty_float_ds;
+    GnuCAnyTailDeclarationSpecifiers *ty_double_ds;
+    GnuCAnyTailDeclarationSpecifiers *ty_long_double_ds;
+
+    /* types (in struct declarations and bare type names) */
+    GnuCAnySpecifierQualifierList *ty_void_sql;
+    GnuCAnySpecifierQualifierList *ty_char_sql;
+    GnuCAnySpecifierQualifierList *ty_signed_char_sql;
+    GnuCAnySpecifierQualifierList *ty_unsigned_char_sql;
+
+    GnuCAnySpecifierQualifierList *ty_signed_short_sql;
+    GnuCAnySpecifierQualifierList *ty_unsigned_short_sql;
+    GnuCAnySpecifierQualifierList *ty_signed_int_sql;
+    GnuCAnySpecifierQualifierList *ty_unsigned_int_sql;
+    GnuCAnySpecifierQualifierList *ty_signed_long_sql;
+    GnuCAnySpecifierQualifierList *ty_unsigned_long_sql;
+    GnuCAnySpecifierQualifierList *ty_signed_long_long_sql;
+    GnuCAnySpecifierQualifierList *ty_unsigned_long_long_sql;
+
+    GnuCAnySpecifierQualifierList *ty_float_sql;
+    GnuCAnySpecifierQualifierList *ty_double_sql;
+    GnuCAnySpecifierQualifierList *ty_long_double_sql;
 };
 
 struct BuildTranslationUnit
 {
-    C89_AnyTranslationUnit *ast_tu;
+    GnuCAliasTranslationUnit *ast_tu;
 };
 
-struct BuildTopLevel
+struct BuildStatement
 {
-    C89_AnyExternalDeclaration *ast_ext;
+    GnuCOptLabels *ast_labels;
+    GnuCAnyBlockItem *ast_unlabeled;
+    GnuCAnyExternalDeclaration *ast_ext;
 };
 
 struct BuildStorageClass
 {
-    C89_OptStorageClassSpecifier *ast_scs;
-};
-
-struct BuildDeclaration
-{
-    C89_TreeDeclaration *ast_decl;
+    GnuCAnyHeadDeclarationSpecifier *ast_scs;
 };
 
 struct BuildParamDeclaration
 {
-    C89_AnyParameterDeclaration *ast_param_decl;
+    GnuCAnyParameterDeclaration *ast_param_decl;
 };
 
 struct BuildMemberDeclaration
 {
-    C89_TreeStructDeclaration *ast_struct_decl;
+    GnuCAnyStructDeclaration *ast_struct_decl;
 };
 
 struct BuildEnumerator
 {
-    C89_AnyEnumerator *ast_enum;
+    GnuCAnyEnumerator *ast_enum;
 };
 
 enum BuildTypeType
@@ -164,6 +180,11 @@ enum BuildTypeType
     BTYTY_ARRAY,
     BTYTY_FUN,
 };
+struct BuildTypeFlags
+{
+    bool is_const;
+    bool is_volatile;
+};
 struct BuildType
 {
     /* Types can be used in a lot of ways, many involving constructing
@@ -171,113 +192,129 @@ struct BuildType
     enum BuildTypeType type;
     __extension__ union
     {
-        /* only for BTYTY_SPEC */
-        C89_AnyTypeSpecifier *ast_spec;
-        /* only for BTYTY_PTR, BTYTY_ARRAY, and BTYTY_FUN */
-        BuildType *target;
+        struct
+        {
+            GnuCAnyTailDeclarationSpecifiers *ast_dspec;
+            GnuCAnySpecifierQualifierList *ast_sql;
+        } spec;
+        struct
+        {
+            BuildType *element;
+            void *_unused;
+        } ptr;
+        struct
+        {
+            BuildType *element;
+            GnuCAnyArrayDeclarator *size;
+        } array;
+        struct
+        {
+            BuildType *ret;
+            GnuCAnyParameterTypeList *args;
+        } fun;
     };
-    __extension__ union
-    {
-        /* only for BTYTY_ARRAY */
-        C89_OptConditionalExpression *array_size;
-        /* only for BTYTY_FUN */
-        C89_OptParameterTypeList *args;
-    };
-    bool is_const;
-    bool is_volatile;
-};
-
-struct BuildStatement
-{
-    C89_AnyStatement *ast_stmt;
+    struct BuildTypeFlags flags;
 };
 
 struct BuildInitializer
 {
-    C89_AnyInitializer *ast_init;
+    GnuCAnyInitializer *ast_init;
 };
 
 struct BuildExpression
 {
-    C89_AnyCommaExpression *ast_expr;
+    GnuCAnyExprList *ast_expr;
 };
 
 
 struct BuildTypePairDeclarator
 {
-    C89_TreeSpecifierQualifierList *sql;
-    C89_AnyDeclarator *decl;
+    GnuCAnyDeclarationSpecifiers *specs;
+    GnuCAnyDeclarator *decl;
 };
 struct BuildTypePairAbstractDeclarator
 {
-    C89_TreeSpecifierQualifierList *sql;
-    C89_OptAbstractDeclarator *decl;
+    GnuCAnyDeclarationSpecifiers *specs;
+    GnuCOptAbstractDeclarator *decl;
+};
+struct BuildTypePairStructDeclarator
+{
+    GnuCAnySpecifierQualifierList *specs;
+    GnuCAnyDeclarator *decl;
+};
+struct BuildTypePairAbstractStructDeclarator
+{
+    GnuCAnySpecifierQualifierList *specs;
+    GnuCOptAbstractDeclarator *decl;
 };
 
 
 /* build helpers */
-C89_AtomIdentifier *build_id(Builder *b, const char *id);
-C89_AtomTypedefName *build_typedef_name(Builder *b, const char *id);
+GnuCAtomIdentifier *build_id(Builder *b, const char *id);
+GnuCAtomTypedefName *build_typedef_name(Builder *b, const char *id);
 
 
 /* raw builders */
-BuildTranslationUnit *build_tu_ast(Builder *b, C89_AnyTranslationUnit *ast);
-BuildTopLevel *build_top_ast(Builder *b, C89_AnyExternalDeclaration *ast);
-BuildStorageClass *build_storage_class_ast(Builder *b, C89_OptStorageClassSpecifier *ast);
-BuildDeclaration *build_decl_ast(Builder *b, C89_TreeDeclaration *ast);
-BuildParamDeclaration *build_param_ast(Builder *b, C89_AnyParameterDeclaration *ast);
-BuildMemberDeclaration *build_member_ast(Builder *b, C89_TreeStructDeclaration *ast);
-BuildEnumerator *build_enum_ast(Builder *b, C89_AnyEnumerator *ast);
-BuildType *build_type_spec_ast(Builder *b, C89_AnyTypeSpecifier *ast, bool isc, bool isv);
-BuildType *build_type_ptr_ast(Builder *b, BuildType *target, bool isc, bool isv);
-BuildType *build_type_array_ast(Builder *b, BuildType *element, C89_OptConditionalExpression *size, bool isc, bool isv);
-BuildType *build_type_fun_ast(Builder *b, BuildType *target, C89_OptParameterTypeList *args, bool isc, bool isv);
+BuildTranslationUnit *build_tu_ast(Builder *b, GnuCAliasTranslationUnit *ast);
+BuildStatement *build_stmt_ast(Builder *b, GnuCOptLabels *labels, GnuCAnyBlockItem *ast);
+BuildStatement *build_decl_ast(Builder *b, GnuCAnyDeclaration *ast);
+BuildStorageClass *build_storage_class_ast(Builder *b, GnuCAnyHeadDeclarationSpecifier *ast);
+BuildParamDeclaration *build_param_ast(Builder *b, GnuCAnyParameterDeclaration *ast);
+BuildMemberDeclaration *build_member_ast(Builder *b, GnuCAnyStructDeclaration *ast);
+BuildEnumerator *build_enum_ast(Builder *b, GnuCAnyEnumerator *ast);
+BuildType *build_type_spec_ast(Builder *b, GnuCAnyTailDeclarationSpecifiers *ds, GnuCAnySpecifierQualifierList *ast);
+BuildType *build_type_ptr_ast(Builder *b, BuildType *target);
+BuildType *build_type_array_ast(Builder *b, BuildType *element, GnuCAnyArrayDeclarator *size);
+BuildType *build_type_fun_ast(Builder *b, BuildType *target, GnuCAnyParameterTypeList *args);
 BuildType *build_type_copy_ast(Builder *b, BuildType copy);
-BuildStatement *build_stmt_ast(Builder *b, C89_AnyStatement *ast);
-BuildInitializer *build_init_ast(Builder *b, C89_AnyInitializer *ast);
-BuildExpression *build_expr_ast(Builder *b, C89_AnyCommaExpression *ast);
+BuildInitializer *build_init_ast(Builder *b, GnuCAnyInitializer *ast);
+BuildExpression *build_expr_ast(Builder *b, GnuCAnyExprList *ast);
 
 
 /* unbuilders & rebuilder wrappers */
-BuildTypePairDeclarator build_type_to_decl(Builder *b, BuildType *type, const char *name);
-BuildTypePairAbstractDeclarator build_type_to_decl_abstract(Builder *b, BuildType *type);
+BuildTypePairDeclarator build_type_to_decl(Builder *b, size_t nscs, BuildStorageClass **scs, BuildType *type, const char *name);
+BuildTypePairAbstractDeclarator build_type_to_decl_abstract(Builder *b, size_t nscs, BuildStorageClass **scs, BuildType *type);
+BuildTypePairStructDeclarator build_type_to_decl_struct(Builder *b, BuildType *type, const char *name);
+BuildTypePairAbstractStructDeclarator build_type_to_decl_struct_abstract(Builder *b, BuildType *type);
 
-C89_AnyStatement *build_stmt_to_stmt(Builder *b, BuildStatement *stmt);
-C89_TreeCompoundStatement *build_stmt_to_compound(Builder *b, BuildStatement *stmt);
-C89_AnyStatement *build_stmt_to_else_body(Builder *b, BuildStatement *stmt);
+GnuCAnyBlockItem *build_stmt_to_stmt(Builder *b, BuildStatement *stmt);
+GnuCTreeCompoundStatement *build_stmt_to_compound(Builder *b, BuildStatement *stmt);
+GnuCAnyStatement *build_stmt_to_else_body(Builder *b, BuildStatement *stmt);
 
-C89_AnyInitializer *build_init_to_init(Builder *b, BuildInitializer *init);
+GnuCAnyInitializer *build_init_to_init(Builder *b, BuildInitializer *init);
 
-BuildExpression *build_expr_from_primary(Builder *b, C89_AnyPrimaryExpression *expr);
-BuildExpression *build_expr_from_postfix(Builder *b, C89_AnyPostfixExpression *expr);
-BuildExpression *build_expr_from_unary(Builder *b, C89_AnyUnaryExpression *expr);
-BuildExpression *build_expr_from_mul(Builder *b, C89_AnyMultiplicativeExpression *expr);
-BuildExpression *build_expr_from_add(Builder *b, C89_AnyAdditiveExpression *expr);
-BuildExpression *build_expr_from_shift(Builder *b, C89_AnyShiftExpression *expr);
-BuildExpression *build_expr_from_rel(Builder *b, C89_AnyRelationalExpression *expr);
-BuildExpression *build_expr_from_eq(Builder *b, C89_AnyEqualityExpression *expr);
-BuildExpression *build_expr_from_bit_and(Builder *b, C89_AnyAndExpression *expr);
-BuildExpression *build_expr_from_bit_xor(Builder *b, C89_AnyExclusiveOrExpression *expr);
-BuildExpression *build_expr_from_bit_or(Builder *b, C89_AnyInclusiveOrExpression *expr);
-BuildExpression *build_expr_from_log_and(Builder *b, C89_AnyLogicalAndExpression *expr);
-BuildExpression *build_expr_from_log_or(Builder *b, C89_AnyLogicalOrExpression *expr);
-BuildExpression *build_expr_from_conditional(Builder *b, C89_AnyConditionalExpression *expr);
-BuildExpression *build_expr_from_assignment(Builder *b, C89_AnyAssignmentExpression *expr);
-BuildExpression *build_expr_from_comma(Builder *b, C89_AnyCommaExpression *expr);
+BuildExpression *build_expr_from_primary(Builder *b, GnuCAnyPrimaryExpression *expr);
+BuildExpression *build_expr_from_postfix(Builder *b, GnuCAnyPostfixExpression *expr);
+BuildExpression *build_expr_from_cast(Builder *b, GnuCAnyCastExpression *expr);
+BuildExpression *build_expr_from_unary(Builder *b, GnuCAnyUnaryExpression *expr);
+BuildExpression *build_expr_from_mul(Builder *b, GnuCAnyMultiplicativeExpression *expr);
+BuildExpression *build_expr_from_add(Builder *b, GnuCAnyAdditiveExpression *expr);
+BuildExpression *build_expr_from_shift(Builder *b, GnuCAnyShiftExpression *expr);
+BuildExpression *build_expr_from_rel(Builder *b, GnuCAnyRelationalExpression *expr);
+BuildExpression *build_expr_from_eq(Builder *b, GnuCAnyEqualityExpression *expr);
+BuildExpression *build_expr_from_bit_and(Builder *b, GnuCAnyAndExpression *expr);
+BuildExpression *build_expr_from_bit_xor(Builder *b, GnuCAnyExclusiveOrExpression *expr);
+BuildExpression *build_expr_from_bit_or(Builder *b, GnuCAnyInclusiveOrExpression *expr);
+BuildExpression *build_expr_from_log_and(Builder *b, GnuCAnyLogicalAndExpression *expr);
+BuildExpression *build_expr_from_log_or(Builder *b, GnuCAnyLogicalOrExpression *expr);
+BuildExpression *build_expr_from_conditional(Builder *b, GnuCAnyConditionalExpression *expr);
+BuildExpression *build_expr_from_assignment(Builder *b, GnuCAnyAssignmentExpression *expr);
+BuildExpression *build_expr_from_comma(Builder *b, GnuCAnyExprList *expr);
 
-C89_AnyPrimaryExpression *build_expr_to_primary(Builder *b, BuildExpression *expr);
-C89_AnyPostfixExpression *build_expr_to_postfix(Builder *b, BuildExpression *expr);
-C89_AnyUnaryExpression *build_expr_to_unary(Builder *b, BuildExpression *expr);
-C89_AnyMultiplicativeExpression *build_expr_to_mul(Builder *b, BuildExpression *expr);
-C89_AnyAdditiveExpression *build_expr_to_add(Builder *b, BuildExpression *expr);
-C89_AnyShiftExpression *build_expr_to_shift(Builder *b, BuildExpression *expr);
-C89_AnyRelationalExpression *build_expr_to_rel(Builder *b, BuildExpression *expr);
-C89_AnyEqualityExpression *build_expr_to_eq(Builder *b, BuildExpression *expr);
-C89_AnyAndExpression *build_expr_to_bit_and(Builder *b, BuildExpression *expr);
-C89_AnyExclusiveOrExpression *build_expr_to_bit_xor(Builder *b, BuildExpression *expr);
-C89_AnyInclusiveOrExpression *build_expr_to_bit_or(Builder *b, BuildExpression *expr);
-C89_AnyLogicalAndExpression *build_expr_to_log_and(Builder *b, BuildExpression *expr);
-C89_AnyLogicalOrExpression *build_expr_to_log_or(Builder *b, BuildExpression *expr);
-C89_AnyConditionalExpression *build_expr_to_conditional(Builder *b, BuildExpression *expr);
-C89_AnyAssignmentExpression *build_expr_to_assignment(Builder *b, BuildExpression *expr);
-C89_AnyCommaExpression *build_expr_to_comma(Builder *b, BuildExpression *expr);
+GnuCAnyPrimaryExpression *build_expr_to_primary(Builder *b, BuildExpression *expr);
+GnuCAnyPostfixExpression *build_expr_to_postfix(Builder *b, BuildExpression *expr);
+GnuCAnyCastExpression *build_expr_to_cast(Builder *b, BuildExpression *expr);
+GnuCAnyUnaryExpression *build_expr_to_unary(Builder *b, BuildExpression *expr);
+GnuCAnyMultiplicativeExpression *build_expr_to_mul(Builder *b, BuildExpression *expr);
+GnuCAnyAdditiveExpression *build_expr_to_add(Builder *b, BuildExpression *expr);
+GnuCAnyShiftExpression *build_expr_to_shift(Builder *b, BuildExpression *expr);
+GnuCAnyRelationalExpression *build_expr_to_rel(Builder *b, BuildExpression *expr);
+GnuCAnyEqualityExpression *build_expr_to_eq(Builder *b, BuildExpression *expr);
+GnuCAnyAndExpression *build_expr_to_bit_and(Builder *b, BuildExpression *expr);
+GnuCAnyExclusiveOrExpression *build_expr_to_bit_xor(Builder *b, BuildExpression *expr);
+GnuCAnyInclusiveOrExpression *build_expr_to_bit_or(Builder *b, BuildExpression *expr);
+GnuCAnyLogicalAndExpression *build_expr_to_log_and(Builder *b, BuildExpression *expr);
+GnuCAnyLogicalOrExpression *build_expr_to_log_or(Builder *b, BuildExpression *expr);
+GnuCAnyConditionalExpression *build_expr_to_conditional(Builder *b, BuildExpression *expr);
+GnuCAnyAssignmentExpression *build_expr_to_assignment(Builder *b, BuildExpression *expr);
+GnuCAnyExprList *build_expr_to_comma(Builder *b, BuildExpression *expr);

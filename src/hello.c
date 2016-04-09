@@ -21,6 +21,7 @@
 
 #define ARRAY_SIZE(a) sizeof(a)/sizeof(a[0])
 #define ARRAY_PAIR(a) ARRAY_SIZE(a), a
+#define SINGLE_PAIR(e) 1, &e
 #define ZERO_PAIR(a) 0, NULL
 
 
@@ -28,7 +29,6 @@ int main()
 {
     Builder *b = builder_create();
 
-    BuildStorageClass *no_sc = build_storage_class_none(b);
     BuildStorageClass *extern_sc = build_storage_class_extern(b);
 
     BuildType *ty_void = build_type_void(b);
@@ -37,11 +37,10 @@ int main()
     BuildType *ty_cpp = build_type_pointer(b, build_type_pointer(b, ty_char));
     BuildType *ty_int = build_type_signed_int(b);
 
-    BuildParamDeclaration *p_format = build_param_declaration(b, no_sc, ty_ccp, "format");
+    BuildParamDeclaration *p_format = build_param_declaration(b, ZERO_PAIR(), ty_ccp, "format");
     BuildParamDeclaration *printf_params[] = {p_format};
     BuildType *printf_ty = build_type_function(b, ty_int, ARRAY_PAIR(printf_params), true);
-    BuildDeclaration *decl_printf = build_declaration_noinit(b, extern_sc, printf_ty, "printf");
-    BuildTopLevel *top_decl_printf = build_top_decl(b, decl_printf);
+    BuildStatement *decl_printf = build_declaration_noinit(b, SINGLE_PAIR(extern_sc), printf_ty, "printf");
 
     BuildExpression *zero = build_expr_int(b, 0);
     BuildExpression *hello = build_expr_string(b, "Hello, World!\n");
@@ -58,14 +57,14 @@ int main()
     BuildStatement *return_0 = build_stmt_return(b, zero);
     BuildStatement *main_stmts[] = {stmt_cast_argc, stmt_cast_argv, stmt_call_printf, return_0};
 
-    BuildParamDeclaration *p_argc = build_param_declaration(b, no_sc, ty_int, "argc");
-    BuildParamDeclaration *p_argv = build_param_declaration(b, no_sc, ty_cpp, "argv");
+    BuildParamDeclaration *p_argc = build_param_declaration(b, ZERO_PAIR(), ty_int, "argc");
+    BuildParamDeclaration *p_argv = build_param_declaration(b, ZERO_PAIR(), ty_cpp, "argv");
     BuildParamDeclaration *main_params[] = {p_argc, p_argv};
     BuildType *main_ty = build_type_function(b, ty_int, ARRAY_PAIR(main_params), false);
-    BuildStatement *main_body = build_stmt_compound(b, ZERO_PAIR(), ARRAY_PAIR(main_stmts));
-    BuildTopLevel *def_main = build_top_function_definition(b, no_sc, "main", main_ty, main_body);
+    BuildStatement *main_body = build_stmt_compound(b, ARRAY_PAIR(main_stmts));
+    BuildStatement *def_main = build_function_definition(b, ZERO_PAIR(), "main", main_ty, main_body);
 
-    BuildTopLevel *tops[] = {top_decl_printf, def_main};
+    BuildStatement *tops[] = {decl_printf, def_main};
     BuildTranslationUnit *tu = build_tu(b, ARRAY_PAIR(tops));
     builder_emit_tu_to_file(tu, stdout);
     builder_destroy(b);

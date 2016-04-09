@@ -24,8 +24,7 @@ import nicate
 def main():
     b = nicate.Builder()
 
-    no_sc = b.storage_class_none()
-    extern_sc = b.storage_class_extern()
+    extern_sc = [b.storage_class_extern()]
 
     ty_void = b.type_void()
     ty_char = b.type_char()
@@ -33,11 +32,10 @@ def main():
     ty_cpp = b.type_pointer(b.type_pointer(ty_char))
     ty_int = b.type_signed_int()
 
-    p_format = b.param_declaration(no_sc, ty_ccp, "format")
+    p_format = b.param_declaration([], ty_ccp, "format")
     printf_params = [p_format]
     printf_ty = b.type_function(ty_int, printf_params, True)
     decl_printf = b.declaration_noinit(extern_sc, printf_ty, "printf")
-    top_decl_printf = b.top_decl(decl_printf)
 
     zero = b.expr_int(0)
     hello = b.expr_string("Hello, World!\n")
@@ -54,14 +52,14 @@ def main():
     return_0 = b.stmt_return(zero)
     main_stmts = [stmt_cast_argc, stmt_cast_argv, stmt_call_printf, return_0]
 
-    p_argc = b.param_declaration(no_sc, ty_int, "argc")
-    p_argv = b.param_declaration(no_sc, ty_cpp, "argv")
+    p_argc = b.param_declaration([], ty_int, "argc")
+    p_argv = b.param_declaration([], ty_cpp, "argv")
     main_params = [p_argc, p_argv]
     main_ty = b.type_function(ty_int, main_params, False)
-    main_body = b.stmt_compound([], main_stmts)
-    def_main = b.top_function_definition(no_sc, "main", main_ty, main_body)
+    main_body = b.stmt_compound(main_stmts)
+    def_main = b.function_definition([], "main", main_ty, main_body)
 
-    tops = [top_decl_printf, def_main]
+    tops = [decl_printf, def_main]
     tu = b.tu(tops)
     tu.emit_to_file(sys.stdout)
 
