@@ -21,6 +21,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "pool.h"
 
@@ -83,7 +84,7 @@ BuildType *build_type_spec_ast(Builder *b, GnuCAnyTailDeclarationSpecifiers *ds,
     rv.type = BTYTY_SPEC;
     rv.spec.ast_dspec = ds;
     rv.spec.ast_sql = sql;
-    rv.flags = (struct BuildTypeFlags){};
+    memset(&rv.flags, '\0', sizeof(rv.flags));
     return (BuildType *)pool_intern(b->pool, &rv, sizeof(rv));
 }
 BuildType *build_type_ptr_ast(Builder *b, BuildType *target)
@@ -92,7 +93,7 @@ BuildType *build_type_ptr_ast(Builder *b, BuildType *target)
     rv.type = BTYTY_PTR;
     rv.ptr.element = target;
     rv.ptr._unused = NULL;
-    rv.flags = (struct BuildTypeFlags){};
+    memset(&rv.flags, '\0', sizeof(rv.flags));
     return (BuildType *)pool_intern(b->pool, &rv, sizeof(rv));
 }
 BuildType *build_type_array_ast(Builder *b, BuildType *element, GnuCAnyArrayDeclarator *size)
@@ -101,7 +102,7 @@ BuildType *build_type_array_ast(Builder *b, BuildType *element, GnuCAnyArrayDecl
     rv.type = BTYTY_ARRAY;
     rv.array.element = element;
     rv.array.size = size;
-    rv.flags = (struct BuildTypeFlags){};
+    memset(&rv.flags, '\0', sizeof(rv.flags));
     return (BuildType *)pool_intern(b->pool, &rv, sizeof(rv));
 }
 BuildType *build_type_fun_ast(Builder *b, BuildType *target, GnuCAnyParameterTypeList *args)
@@ -110,7 +111,7 @@ BuildType *build_type_fun_ast(Builder *b, BuildType *target, GnuCAnyParameterTyp
     rv.type = BTYTY_FUN;
     rv.fun.ret = target;
     rv.fun.args = args;
-    rv.flags = (struct BuildTypeFlags){};
+    memset(&rv.flags, '\0', sizeof(rv.flags));
     return (BuildType *)pool_intern(b->pool, &rv, sizeof(rv));
 }
 BuildType *build_type_copy_ast(Builder *b, BuildType copy)
