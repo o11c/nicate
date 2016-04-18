@@ -44,3 +44,4 @@ size_t tokenizer_sym(Tokenizer *tok);
 const char *tokenizer_text_start(Tokenizer *tok);
 size_t tokenizer_text_len(Tokenizer *tok);
 void tokenizer_pop(Tokenizer *tok);
+void tokenizer_reset(Tokenizer *tok);

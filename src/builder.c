@@ -1023,13 +1023,13 @@ BuildExpression *build_expr_float(Builder *b, long double f)
 {
     char buf[1 + 1 + 20 + 1 + 1 + 4 + 1];
     int rv;
-    GnuCAtomFloatingConstant *p;
+    GnuCAtomDecimalFloatingConstant *p;
     long double f2;
     rv = sprintf(buf, "%.21Le", f);
     assert (rv >= 0 && (size_t)rv < sizeof(buf));
     rv = sscanf(buf, "%Lf", &f2);
     assert (rv == 1 && f == f2);
-    p = gnu_c_create_atom_floating_constant(b->pool, buf);
+    p = gnu_c_create_atom_decimal_floating_constant(b->pool, buf);
     return build_expr_from_primary(b, (GnuCAnyPrimaryExpression *)p);
 }
 

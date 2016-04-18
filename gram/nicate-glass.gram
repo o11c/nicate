@@ -1,8 +1,9 @@
 language nicate-glass
 
+whitespace [\n\x20]+
+
 keyword break
 keyword case
-keyword const
 keyword continue
 keyword default
 keyword do
@@ -11,19 +12,25 @@ keyword enum
 keyword extern
 #keyword for
 keyword fun
-keyword global
 keyword goto
 keyword if
 keyword let
 keyword return
-keyword static
 keyword struct
 keyword switch
 keyword union
 keyword while
 
-atom id
-atom literal
+atom comment \#[^\n]*
+atom id [A-Za-z_][A-Za-z_0-9]*
+atom decimal-floating-literal (([0-9]+\.|[0-9]*\.[0-9]+)([eE][-+]?[0-9]+)?|[0-9]+([eE][-+]?[0-9]+))[fFlL]?
+atom hexadecimal-floating-literal 0[xX]([0-9a-fA-F]*\.[0-9a-fA-F]|[0-9a-fA-F]+\.?)(p[-+]?[0-9]+)[fFlL]?
+atom decimal-literal [1-9][0-9]*
+atom octal-literal 0[oO]?[0-7]*
+atom hexadecimal-literal 0[xX][0-9a-fA-F]+
+atom binary-literal 0[bB][01]+
+atom character-literal \'([^\']|\\.)*\'
+atom string-literal \"([^\"]|\\.)*\"
 
 symbol [ lbracket
 symbol ] rbracket
@@ -78,7 +85,6 @@ tu:
     tu_opt stmt
 attr:
     @ id
-    @ id [ expr-list_opt ]
 stmt:
     attr-stmt
     noattr-stmt
@@ -90,12 +96,10 @@ attr-stmt:
     fun fun-sig maybe-compound-stmt
     assign_opt ;
     extern typed-id ;
-    const typed-id = expr ;
-    static typed-id = expr ;
-    global typed-id = expr ;
     let typed-id ;
     let typed-id = expr ;
 noattr-stmt:
+    comment
     id : stmt
     default : stmt
     case expr : stmt
@@ -208,3 +212,12 @@ primary-expr:
     id
     literal
     ( expr-list_opt )
+literal:
+    decimal-floating-literal
+    hexadecimal-floating-literal
+    decimal-literal
+    octal-literal
+    hexadecimal-literal
+    binary-literal
+    character-literal
+    string-literal

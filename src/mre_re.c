@@ -497,8 +497,8 @@ static CharResult char_after_bs(const char *re, const char *re_end)
         {
             fail("bad hex escape");
         }
-        c = ((re[2] & 0xf) + (re[2] & 0x10 ? 9 : 0)) << 4;
-        c |= ((re[3] & 0xf) + (re[3] & 0x10 ? 9 : 0)) << 0;
+        c = ((re[2] & 0xf) + (re[2] & 0x10 ? 0 : 9)) << 4;
+        c |= ((re[3] & 0xf) + (re[3] & 0x10 ? 0 : 9)) << 0;
         len = 4;
     }
     else
@@ -851,6 +851,10 @@ static Result parse_regex(Pool *pool, const char *re, const char *re_end)
 
 Nfa *nfa_parse_regex(Pool *pool, const char *re)
 {
+    if (re == NULL)
+    {
+        return nfa_fail(pool);
+    }
     return nfa_parse_regex_slice(pool, re, strlen(re));
 }
 

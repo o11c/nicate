@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#   Copyright © 2015 Ben Longbons
+#   Copyright © 2015-2016 Ben Longbons
 #
 #   This file is part of Nicate.
 #
@@ -20,6 +20,8 @@ import nicate
 
 
 def do_match(pat, txt):
+    if isinstance(txt, bytes):
+        txt = nicate.b2u(txt)
     l = nicate.Lexicon([nicate.Symbol('ANON', pat)])
     t = nicate.Tokenizer(l)
     t.feed(txt)
@@ -83,6 +85,22 @@ def test_regex_atom():
     do_match('\\{', '{')
     do_match('\\|', '|')
     do_match('\\}', '}')
+
+def test_regex_atom2():
+    do_match('\\0', '\0')
+    do_match('\\7', '\7')
+    do_match('\\00', '\0')
+    do_match('\\70', '\70')
+    do_match('\\77', '\77')
+    do_match('\\000', '\0')
+    do_match('\\300', b'\300')
+    do_match('\\377', b'\377')
+    do_match('\\x00', '\x00')
+    do_match('\\x0f', '\x0f')
+    do_match('\\x1f', '\x1f')
+    do_match('\\xf0', b'\xf0')
+    do_match('\\xf1', b'\xf1')
+    do_match('\\xff', b'\xff')
 
 def test_regex_repeat():
     do_match('ab?c', 'ac')

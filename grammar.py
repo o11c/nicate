@@ -92,15 +92,20 @@ class IdentifierCase:
             other_visual = other.visual
         return IdentifierCase('%s-%s' % (other_dash, self_dash), '%s-%s' % (other_visual, self_visual))
 
+def re_escape(s):
+    return "'%s'" % s.replace("'", "'\\''")
+
 class Grammar:
-    __slots__ = ('filename', 'language', 'rules', 'start')
+    __slots__ = ('filename', 'language', 'rules', 'start', 'patterns')
 
     def __init__(self, filename, src):
         self.filename = filename
         self.language = None
         self.rules = collections.OrderedDict()
         self.start = None
+        self.patterns = []
 
+        whitespace = None
         cur_name = None
         cur_rule = None
 
@@ -118,6 +123,15 @@ class Grammar:
                 continue
             if not self.language:
                 raise GrammarError(i, 'language not specified')
+            if words[0] == 'whitespace':
+                if whitespace:
+                    raise GrammarError(i, 'whitespace specified twice')
+                if len(words) != 2:
+                    raise GrammarError(i, 'whitespace takes 1 argument')
+                whitespace = words[1]
+                continue
+            if not whitespace:
+                raise GrammarError(i, 'whitespace not specified')
             if self.start is None:
                 if words[0] == 'keyword':
                     if len(words) != 2:
@@ -125,9 +139,11 @@ class Grammar:
                     self.add_keyword(words[1])
                     continue
                 elif words[0] == 'atom':
-                    if len(words) != 2:
-                        raise GrammarError(i, 'atom takes 1 argument')
-                    self.add_atom(words[1])
+                    if len(words) != 3:
+                        if len(words) != 2:
+                            raise GrammarError(i, 'atom takes 1 or 2 arguments')
+                        words.append(None)
+                    self.add_atom(words[1], words[2])
                     continue
                 elif words[0] == 'symbol':
                     if len(words) != 3:
@@ -154,6 +170,7 @@ class Grammar:
         if cur_rule is None:
             raise GrammarError('eof', 'no rules')
         self.add_rule(cur_name, cur_rule)
+        self.patterns.append(Term(IdentifierCase('whitespace'), True, regex=whitespace))
 
         print('%s: %d rules parsed; resolving cross-references ...' % (self.language.visual, len(self.rules)))
         assert self.start is not None
@@ -198,25 +215,26 @@ class Grammar:
             raise KeyError('%d rules' % len(undefined))
 
     def set_rule(self, k, v):
+        if isinstance(v, Term):
+            self.patterns.append(v)
         if self.rules.setdefault(k, v) is not v:
             raise KeyError(k)
-        if self.start is None and not isinstance(v, (Term, Option)):
-            # First lhs.
-            # Note that we *may* be an alias to an option.
-            self.start = v
+        assert self.start is not None or isinstance(v, Term)
         return v
 
     def add_keyword(self, ty):
         nouscore = ty.strip('_').replace('_', '-')
         if ty.startswith('_'):
             nouscore = nouscore.lower()
-        self.set_rule(ty, Term(IdentifierCase('kw-' + nouscore, ty), False))
+        regex = re_escape(ty)
+        self.set_rule(ty, Term(IdentifierCase('kw-' + nouscore, ty), False, regex))
 
-    def add_atom(self, ty):
-        self.set_rule(ty, Term(IdentifierCase('atom-' + ty, ty), True))
+    def add_atom(self, ty, regex):
+        self.set_rule(ty, Term(IdentifierCase('atom-' + ty, ty), True, regex))
 
     def add_symbol(self, sym, ty):
-        self.set_rule(sym, Term(IdentifierCase('sym-' + ty, sym), False))
+        regex = re_escape(sym)
+        self.set_rule(sym, Term(IdentifierCase('sym-' + ty, sym), False, regex))
 
     def add_rule(self, name, alts):
         if len(alts) == 0:
@@ -269,10 +287,11 @@ class Rule:
         return '%s(%r)' % (self.__class__.__name__, self.tag)
 
 class Term(Rule):
-    __slots__ = ('tag', 'is_atom')
-    def __init__(self, tag, is_atom):
+    __slots__ = ('tag', 'is_atom', 'regex')
+    def __init__(self, tag, is_atom, regex):
         self.tag = tag
         self.is_atom = is_atom
+        self.regex = regex
 
     def nullable(self, stack=None):
         return False

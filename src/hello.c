@@ -18,8 +18,8 @@
 */
 
 #include "builder.h"
+#include "util.h"
 
-#define ARRAY_SIZE(a) sizeof(a)/sizeof(a[0])
 #define ARRAY_PAIR(a) ARRAY_SIZE(a), a
 #define SINGLE_PAIR(e) 1, &e
 #define ZERO_PAIR(a) 0, NULL

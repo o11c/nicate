@@ -229,3 +229,10 @@ void tokenizer_pop(Tokenizer *tok)
     mre_runtime_reset(tok->runtime);
     refeed(tok, tok->buffer_start);
 }
+
+void tokenizer_reset(Tokenizer *tok)
+{
+    tok->buffer_start = 0;
+    tok->buffer_end = 0;
+    mre_runtime_reset(tok->runtime);
+}

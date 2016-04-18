@@ -18,6 +18,8 @@
 import cffi
 from collections import namedtuple
 
+import grammar
+
 
 def u2b(u):
     return u.encode('utf-8', errors='surrogateescape')
@@ -39,8 +41,8 @@ def load():
             'src/automaton-internal.h',
     ]:
         with open(fn) as f:
-            x = [l for l in f if not l.startswith('#')]
-            ffi.cdef('\n'.join(x).replace(' __extension__ ', ' '))
+            x = [l.replace(' __extension__ ', ' ') for l in f if not l.startswith('#')]
+            ffi.cdef('\n'.join(x))
     return ffi
 
 nicate_ffi = load()
@@ -197,25 +199,37 @@ del emit_to_file, emit_to_string
 
 
 def new_string(u):
+    if u is None:
+        return nicate_ffi.NULL
     b = u2b(u)
     return nicate_ffi.new('char[]', b)
 
 Symbol = namedtuple('Symbol', ('name', 'regex'))
 
 class Lexicon:
-    __slots__ = ('_c_lexicon',)
+    __slots__ = ('_c_lexicon', '_names', '_regexes')
 
     def __init__(self, symbols):
+        import time
         syms = [(new_string(s.name), new_string(s.regex)) for s in symbols]
+        print('lex0', time.time())
         self._c_lexicon = nicate_library.lexicon_create(len(syms), nicate_ffi.new('Symbol[]', syms))
+        print('lex1', time.time())
+        self._names = ['error'] + [s.name for s in symbols]
+        self._regexes = ['(.)'] + [s.regex for s in symbols]
+        for i in range(len(symbols)):
+            assert self.__name(i) == self.name(i)
 
     def __del__(self):
         nicate_library.lexicon_destroy(self._c_lexicon)
 
-    def name(self, idx):
+    def __name(self, idx):
         c = nicate_library.lexicon_name(self._c_lexicon, idx)
         b = nicate_ffi.string(c)
         return b2u(b)
+
+    def name(self, idx):
+        return self._names[idx]
 
 class Tokenizer:
     __slots__ = ('_c_tokenizer', '_py_lexicon')
@@ -226,6 +240,9 @@ class Tokenizer:
 
     def __del__(self):
         nicate_library.tokenizer_destroy(self._c_tokenizer)
+
+    def reset(self):
+        nicate_library.tokenizer_reset(self._c_tokenizer)
 
     def feed(self, u):
         b = u2b(u)
@@ -327,7 +344,7 @@ def _dump_tree(level, grammar, ptr):
     type_name = grammar._names[ptr.type]
     while ptr.num_children == 1:
         ptr = ptr.children
-        type_name += ' ' + grammar._names[ptr.type]
+        type_name += ' -> ' + grammar._names[ptr.type]
     _dump_line(level, 'type: ', type_name)
     if ptr.num_children:
         _dump_line(level, 'children:')
@@ -353,3 +370,117 @@ def ERROR():
     return (nicate_library.ERROR, 0)
 def ACCEPT():
     return (nicate_library.ACCEPT, 0)
+
+def lower_grammar(gram):
+    '''
+    Change a grammar.Grammar into a nicate.Grammar.
+
+    Other than rearranging everything, the important thing here is the
+    removal of all `_opt` rules.
+
+    We also inline all `anon-` rules and aliases.
+    '''
+
+    terminals = ['$end']
+    nonterminals = ['$accept']
+    start = gram.start
+    while isinstance(start, grammar.Alias):
+        start = start.child
+    if isinstance(start, grammar.Option):
+        start = start.child
+    rules = [('$accept', [start.tag.dash, '$end'])]
+
+    def add_rule(lhs, rhses):
+        assert isinstance(lhs, grammar.IdentifierCase)
+        assert all(isinstance(rhs, grammar.Rule) for rhs in rhses)
+        if len(rhses) == 1:
+            rhs, = rhses
+            if isinstance(rhs, grammar.Sequence):
+                if rhs.tag.visual.startswith('anon-'):
+                    add_rule(lhs, rhs.bits)
+                    return
+        for i, rhs in enumerate(rhses):
+            while isinstance(rhs, grammar.Alias):
+                rhses[i] = rhs = rhs.child
+            if isinstance(rhs, grammar.Option):
+                add_rule(lhs, rhses[:i] + rhses[i+1:])
+                add_rule(lhs, rhses[:i] + [rhs.child] + rhses[i+1:])
+                return
+            if isinstance(rhs, grammar.Sequence):
+                assert not rhs.tag.visual.startswith('anon-')
+        rules.append((lhs.dash, [rhs.tag.dash for rhs in rhses]))
+
+    for key, rule in gram.rules.items():
+        assert key == rule.tag.visual
+        if isinstance(rule, grammar.Term):
+            assert len(nonterminals) == 1
+            assert len(rules) == 1
+            terminals.append(rule.tag.dash)
+            continue
+        if isinstance(rule, (grammar.Option, grammar.Alias)):
+            continue
+        if key.startswith('anon-'):
+            continue
+        nonterminals.append(rule.tag.dash)
+        if isinstance(rule, grammar.Sequence):
+            add_rule(rule.tag, rule.bits)
+            continue
+        if isinstance(rule, grammar.Alternative):
+            for alt in rule.bits:
+                add_rule(rule.tag, [alt])
+            continue
+        assert False, '%s has unknown subclass %s' % (rule.tag.visual, type(rule).__name__)
+    return Grammar(terminals, nonterminals, rules)
+
+def lower_lexicon(gram):
+    symbols = [Symbol(term.tag.dash, term.regex) for term in gram.patterns]
+    return Lexicon(symbols)
+
+class Error(Exception):
+    pass
+
+class LexerError(Error):
+    pass
+
+class ParserError(Error):
+    pass
+
+class Parser:
+    __slots__ = ('_py_tokenizer', '_py_automaton')
+
+    def __init__(self, grammar):
+        self._py_tokenizer = Tokenizer(lower_lexicon(grammar))
+        self._py_automaton = Automaton(lower_grammar(grammar))
+
+    def reset(self):
+        self._py_tokenizer.reset()
+        self._py_automaton.reset()
+
+    def feed(self, text, at_eof):
+        tokenizer = self._py_tokenizer
+        automaton = self._py_automaton
+        grammar = automaton._py_grammar
+
+        tokenizer.feed(text)
+        while True:
+            sym = tokenizer.get(at_eof)
+            if sym is None:
+                break
+            sym_type, sym_data = sym
+            if sym_type == 'error':
+                assert (sym_data == '') == (at_eof)
+                if at_eof:
+                    sym_type = '$end'
+                else:
+                    raise LexerError(sym_data)
+            if sym_type == 'whitespace':
+                continue
+            print(sym, grammar._indices.get(sym[0]))
+            if not automaton.feed(sym_type, sym_data):
+                raise ParserError('Unexpected %s: %s'(sym_type, sym_data))
+            automaton.dump_trees()
+            if sym_data == '':
+                break
+
+    def dump(self):
+        self._py_automaton.dump_trees()
