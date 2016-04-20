@@ -32,59 +32,59 @@ atom binary-literal 0[bB][01]+
 atom character-literal \'([^\']|\\.)*\'
 atom string-literal \"([^\"]|\\.)*\"
 
-symbol [ lbracket
-symbol ] rbracket
-symbol ( lparen
-symbol ) rparen
-symbol { lbrace
-symbol } rbrace
-symbol . dot
-symbol -> arrow
-symbol ++ incr
-symbol -- decr
-symbol & ampersand
-symbol * star
-symbol + plus
-symbol - minus
-symbol ~ tilde
-symbol ! bang
-symbol / slash
-symbol % percent
-symbol << lshift
-symbol >> rshift
-symbol < lt
-symbol > gt
-symbol <= le
-symbol >= ge
-symbol == eq
-symbol != ne
-symbol ^ caret
-symbol | pipe
-symbol && logical-and
-symbol || logical-or
-#symbol ? query
-symbol : colon
-symbol = assign
-symbol *= star-assign
-symbol /= slash-assign
-symbol %= percent-assign
-symbol += plus-assign
-symbol -= minus-assign
-symbol <<= lshift-assign
-symbol >>= rshift-assign
-symbol &= ampersand-assign
-symbol ^= caret-assign
-symbol |= pipe-assign
-symbol , comma
-symbol ; semicolon
-symbol @ at
+symbol '[' lbracket
+symbol ']' rbracket
+symbol '(' lparen
+symbol ')' rparen
+symbol '{' lbrace
+symbol '}' rbrace
+symbol '.' dot
+symbol '->' arrow
+symbol '++' incr
+symbol '--' decr
+symbol '&' ampersand
+symbol '*' star
+symbol '+' plus
+symbol '-' minus
+symbol '~' tilde
+symbol '!' bang
+symbol '/' slash
+symbol '%' percent
+symbol '<<' lshift
+symbol '>>' rshift
+symbol '<' lt
+symbol '>' gt
+symbol '<=' le
+symbol '>=' ge
+symbol '==' eq
+symbol '!=' ne
+symbol '^' caret
+symbol '|' pipe
+symbol '&&' logical-and
+symbol '||' logical-or
+#symbol '?' query
+symbol ':' colon
+symbol '=' assign
+symbol '*=' star-assign
+symbol '/=' slash-assign
+symbol '%=' percent-assign
+symbol '+=' plus-assign
+symbol '-=' minus-assign
+symbol '<<=' lshift-assign
+symbol '>>=' rshift-assign
+symbol '&=' ampersand-assign
+symbol '^=' caret-assign
+symbol '|=' pipe-assign
+symbol ',' comma
+symbol ';' semicolon
+symbol '@' at
 
 start tu
 
 tu:
-    tu_opt stmt
+    tu? stmt
 attr:
-    @ id
+    '@' id
 stmt:
     attr-stmt
     noattr-stmt
@@ -94,124 +94,124 @@ attr-stmt:
     struct id maybe-struct-body
     enum id maybe-enum-body
     fun fun-sig maybe-compound-stmt
-    assign_opt ;
-    extern typed-id ;
-    let typed-id ;
-    let typed-id = expr ;
+    assign? ';'
+    extern typed-id ';'
+    let typed-id ';'
+    let typed-id '=' expr ';'
 noattr-stmt:
     comment
-    id : stmt
-    default : stmt
-    case expr : stmt
-    while ( expr ) compound-stmt
-    do compound-stmt while ( expr ) ;
-    goto id ;
-    break ;
-    continue ;
-    return expr_opt ;
-    switch ( expr ) compound-stmt
+    id ':' stmt
+    default ':' stmt
+    case expr ':' stmt
+    while '(' expr ')' compound-stmt
+    do compound-stmt while '(' expr ')' ';'
+    goto id ';'
+    break ';'
+    continue ';'
+    return expr? ';'
+    switch '(' expr ')' compound-stmt
     if-or-compound-stmt
 if-or-compound-stmt:
     compound-stmt
-    if ( expr ) compound-stmt
-    if ( expr ) compound-stmt else if-or-compound-stmt
+    if '(' expr ')' compound-stmt
+    if '(' expr ')' compound-stmt else if-or-compound-stmt
 maybe-struct-body:
-    ;
-    { typed-id-list_opt }
+    ';'
+    '{' typed-id-list? '}'
 maybe-enum-body:
-    ;
-    { id-list_opt }
+    ';'
+    '{' id-list? '}'
 fun-sig:
-    ( typed-id-list_opt ) -> expr
+    '(' typed-id-list? ')' '->' expr
 maybe-compound-stmt:
-    ;
+    ';'
     compound-stmt
 compound-stmt:
-    { stmt-list_opt }
+    '{' stmt-list? '}'
 typed-id:
-    id : expr
+    id ':' expr
 typed-id-list:
-    typed-id-list , typed-id
+    typed-id-list ',' typed-id
     typed-id
 id-list:
-    id-list , id
+    id-list ',' id
     id
 expr-list:
-    expr-list , expr
+    expr-list ',' expr
     expr
 stmt-list:
-    stmt-list_opt stmt
+    stmt-list? stmt
 assign:
-    expr = assign
-    expr *= expr
-    expr /= expr
-    expr %= expr
-    expr += expr
-    expr -= expr
-    expr <<= expr
-    expr >>= expr
-    expr &= expr
-    expr ^= expr
-    expr |= expr
+    expr '=' assign
+    expr '*=' expr
+    expr '/=' expr
+    expr '%=' expr
+    expr '+=' expr
+    expr '-=' expr
+    expr '<<=' expr
+    expr '>>=' expr
+    expr '&=' expr
+    expr '^=' expr
+    expr '|=' expr
     expr
 expr:
     logical-or-expr
 mul-expr:
     unary-expr
-    mul-expr * unary-expr
-    mul-expr / unary-expr
-    mul-expr % unary-expr
+    mul-expr '*' unary-expr
+    mul-expr '/' unary-expr
+    mul-expr '%' unary-expr
 add-expr:
     mul-expr
-    add-expr + mul-expr
-    add-expr - mul-expr
+    add-expr '+' mul-expr
+    add-expr '-' mul-expr
 shift-expr:
     add-expr
-    shift-expr << add-expr
-    shift-expr >> add-expr
+    shift-expr '<<' add-expr
+    shift-expr '>>' add-expr
 cmp-expr:
     shift-expr
-    shift-expr < shift-expr
-    shift-expr > shift-expr
-    shift-expr <= shift-expr
-    shift-expr >= shift-expr
-    shift-expr == shift-expr
-    shift-expr != shift-expr
+    shift-expr '<' shift-expr
+    shift-expr '>' shift-expr
+    shift-expr '<=' shift-expr
+    shift-expr '>=' shift-expr
+    shift-expr '==' shift-expr
+    shift-expr '!=' shift-expr
 bitwise-and-expr:
     cmp-expr
-    bitwise-and-expr & cmp-expr
+    bitwise-and-expr '&' cmp-expr
 bitwise-xor-expr:
     bitwise-and-expr
-    bitwise-xor-expr ^ bitwise-and-expr
+    bitwise-xor-expr '^' bitwise-and-expr
 bitwise-ior-expr:
     bitwise-xor-expr
-    bitwise-ior-expr | bitwise-xor-expr
+    bitwise-ior-expr '|' bitwise-xor-expr
 logical-and-expr:
     bitwise-ior-expr
-    logical-and-expr && bitwise-ior-expr
+    logical-and-expr '&&' bitwise-ior-expr
 logical-or-expr:
     logical-and-expr
-    logical-or-expr || logical-and-expr
+    logical-or-expr '||' logical-and-expr
 unary-expr:
     postfix-expr
-    ++ unary-expr
-    -- unary-expr
-    & unary-expr
-    + unary-expr
-    - unary-expr
-    ~ unary-expr
-    ! unary-expr
+    '++' unary-expr
+    '--' unary-expr
+    '&' unary-expr
+    '+' unary-expr
+    '-' unary-expr
+    '~' unary-expr
+    '!' unary-expr
 postfix-expr:
     primary-expr
-    postfix-expr [ expr-list_opt ]
-    postfix-expr ( expr-list_opt )
-    postfix-expr . id
-    postfix-expr ++
-    postfix-expr --
+    postfix-expr '[' expr-list? ']'
+    postfix-expr '(' expr-list? ')'
+    postfix-expr '.' id
+    postfix-expr '++'
+    postfix-expr '--'
 primary-expr:
     id
     literal
-    ( expr-list_opt )
+    '(' expr-list? ')'
 literal:
     decimal-floating-literal
     hexadecimal-floating-literal

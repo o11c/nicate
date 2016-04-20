@@ -49,7 +49,7 @@ class IdentifierCase:
     __slots__ = ('space', 'dash', 'lower', 'upper', 'camel', 'visual')
 
     def __init__(self, name, visual=None):
-        for bit in name.split('-'):
+        for bit in unquote(name).split('-'):
             bit = bit.rstrip(string.digits)
             assert bit and all(c.islower() for c in bit), name
         self.dash = name
@@ -94,6 +94,12 @@ class IdentifierCase:
 
 def re_escape(s):
     return "'%s'" % s.replace("'", "'\\''")
+
+def unquote(s):
+    if s[0] == "'" == s[-1]:
+        s = s[1:-1]
+    assert "'" not in s
+    return s
 
 class Grammar:
     __slots__ = ('filename', 'language', 'rules', 'start', 'patterns')
@@ -176,7 +182,7 @@ class Grammar:
         assert self.start is not None
         self.start = self.rules[self.start.visual]
         undefined = set()
-        used = {'translation-unit'}
+        used = {self.start.tag.visual}
         for v in sorted(self.rules.values(), key=lambda x: x.tag.space):
             if isinstance(v, (Alternative, Sequence)):
                 for i, b in enumerate(v.bits):
@@ -188,7 +194,7 @@ class Grammar:
                             undefined.add(b.visual)
                     else:
                         used.add(b.tag.visual)
-            elif isinstance(v, (Alias, Option)):
+            elif isinstance(v, (Alias, Option, Star, Plus)):
                 if isinstance(v.child, IdentifierCase):
                     used.add(v.child.visual)
                     try:
@@ -197,7 +203,9 @@ class Grammar:
                         undefined.add(v.child.visual)
                 else:
                     used.add(v.child.tag.visual)
-        nullable = [k for (k, v) in self.rules.items() if not isinstance(v, (Option, Alias)) and v.nullable()]
+            else:
+                assert isinstance(v, Term), type(v).__name__
+        nullable = [k for (k, v) in self.rules.items() if not isinstance(v, (Option, Alias, Star)) and v.nullable()]
         if nullable:
             nullable.sort()
             print('Warning: Nullable rules (%d):' % len(nullable))
@@ -263,20 +271,24 @@ class Grammar:
         return tag
 
     def get_rule(self, vis):
-        if vis.endswith('_opt'):
-            return self.get_opt(vis)
+        if vis.endswith('?'):
+            return self.get_opt(vis, Option, 'opt-')
+        if vis.endswith('*'):
+            return self.get_opt(vis, Star, 'star-')
+        if vis.endswith('+'):
+            return self.get_opt(vis, Plus, 'plus-')
         return self.rules.get(vis) or IdentifierCase(vis)
 
-    def get_opt(self, vis):
+    def get_opt(self, vis, cls, pfx):
         rv = self.rules.get(vis)
         if not rv:
-            base = vis[:-4]
+            base = vis[:-1]
             maybe_tok = self.rules.get(base)
             if isinstance(maybe_tok, Term):
                 base2 = maybe_tok.tag.dash.split('-', 1)[1]
             else:
                 base2 = base
-            rv = self.set_rule(vis, Option(IdentifierCase('opt-' + base2, vis), self.get_rule(base)))
+            rv = self.set_rule(vis, cls(IdentifierCase(pfx + base2, vis), self.get_rule(base)))
         return rv
 
 class Rule:
@@ -306,10 +318,42 @@ class Option(Rule):
         self.child = child
 
     def nullable(self, stack=None):
+        if not isinstance(self.child, IdentifierCase):
+            assert not self.child.nullable(stack)
         return True
 
     def comment(self):
         return '%s: %s | %%%%empty;' % (self.tag.dash, self.child.tag.dash)
+
+class Star(Rule):
+    __slots__ = ('tag', 'child')
+    def __init__(self, tag, child):
+        assert False, 'NYI'
+        self.tag = tag
+        self.child = child
+
+    def nullable(self, stack=None):
+        if not isinstance(self.child, IdentifierCase):
+            assert not self.child.nullable(stack)
+        return True
+
+    def comment(self):
+        return '%s: repeat(%s) | %%%%empty;' % (self.tag.dash, self.child.tag.dash)
+
+class Plus(Rule):
+    __slots__ = ('tag', 'child')
+    def __init__(self, tag, child):
+        assert False, 'NYI'
+        self.tag = tag
+        self.child = child
+
+    def nullable(self, stack=None):
+        if not isinstance(self.child, IdentifierCase):
+            assert not self.child.nullable(stack)
+        return False
+
+    def comment(self):
+        return '%s: repeat(%s);' % (self.tag.dash, self.child.tag.dash)
 
 class Alias(Rule):
     __slots__ = ('tag', 'child')
@@ -318,6 +362,8 @@ class Alias(Rule):
         self.child = child
 
     def nullable(self, stack=None):
+        if isinstance(self.child, IdentifierCase):
+            return False
         return self.child.nullable(stack)
 
     def comment(self):
@@ -335,7 +381,7 @@ class Sequence(Rule):
             return False
         stack.append(self)
         try:
-            return all(b.nullable(stack) for b in self.bits)
+            return all(not isinstance(b, IdentifierCase) and b.nullable(stack) for b in self.bits)
         finally:
             stack.pop()
 
@@ -354,7 +400,7 @@ class Alternative(Rule):
             return False
         stack.append(self)
         try:
-            return any(b.nullable(stack) for b in self.bits)
+            return any(not isinstance(b, IdentifierCase) and b.nullable(stack) for b in self.bits)
         finally:
             stack.pop()
 
@@ -487,7 +533,7 @@ def emit(grammar, header, source):
                     c('    return (%s *)%%(create_terminal)s(pool, %s, raw, true);' % ((lang + ast.tag).camel, (lang + ast.tag).upper))
                     c('}')
                 else:
-                    raw = ast.tag.visual
+                    raw = unquote(ast.tag.visual)
                     raw = raw.replace('\\', '\\\\')
                     raw = raw.replace('"', '\\"')
                     raw = '"%s"' % raw
