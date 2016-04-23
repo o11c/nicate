@@ -169,39 +169,35 @@ translation-unit:
     external-declarations?
 
 external-declarations:
-    external-declaration
-    external-declarations external-declaration
+    external-declarations? external-declaration
 
 external-declaration:
     function-definition
     declaration
+    static-assert-declaration
     asm-definition
     ';'
-    __extension__ external-declaration
+    __extension__ external-declaration                                      #extension-external-declaration
 #    pragma
-    init-declarator-list ';'
+    init-declarator-list ';'                                                #implicit-int-declaration
 
 declaration:
     declaration-specifiers init-declarator-list? ';'
-    static-assert-declaration
 
 function-definition:
-    declarator declaration-list? compound-statement
+    declarator declaration-list? compound-statement                         #implicit-int-function-definition
     nested-function-definition
 
 declaration-list:
-    declaration
-    declaration-list declaration
+    declaration-list? declaration
 
 init-declarator-list:
     init-declarator
-    init-declarator-list ',' init-declarator
+    init-declarator-list ',' init-declarator                                #multi-init-declarator-list
 
 init-declarator:
-    declarator
-    declarator simple-asm-expr
-    declarator simple-asm-expr? attributes
-    declarator simple-asm-expr? attributes? '=' initializer
+    declarator simple-asm-expr? attributes?                                 #uninitialized-declarator
+    declarator simple-asm-expr? attributes? '=' initializer                 #initialized-declarator
 
 nested-function-definition:
     declaration-specifiers declarator declaration-list? compound-statement
@@ -210,23 +206,14 @@ asm-definition:
     simple-asm-expr ';'
 
 static-assert-declaration:
-    static-assert-declaration-no-semi ';'
-
-static-assert-declaration-no-semi:
-    _Static_assert '(' constant-expression ',' string-literal ')'
+    _Static_assert '(' constant-expression ',' string-literal ')' ';'
 
 # Require at least one non-attributes.
 # Does *not* yet enforce the existence of any specifiers.
 declaration-specifiers:
-    head-declaration-specifiers
-    attributes head-declaration-specifiers
-    head-declaration-specifiers-or-attributes tail-declaration-specifiers
-    tail-declaration-specifiers
+    attributes? head-declaration-specifiers                               #only-head-declaration-specifiers
+    attributes? head-declaration-specifiers? tail-declaration-specifiers  #head-tail-declaration-specifiers
 
-head-declaration-specifiers-or-attributes:
-    attributes
-    head-declaration-specifiers
-    attributes head-declaration-specifiers
 head-declaration-specifiers:
     head-declaration-specifiers? head-declaration-specifier attributes?
 head-declaration-specifier:
@@ -236,10 +223,7 @@ head-declaration-specifier:
 
 # Existence of non-attributes in last part is deprecated
 tail-declaration-specifiers:
-    tail-declaration-specifier
-    tail-declaration-specifier head-declaration-specifiers-or-attributes
-    tail-declaration-specifiers tail-declaration-specifier
-    tail-declaration-specifiers tail-declaration-specifier head-declaration-specifiers-or-attributes
+    tail-declaration-specifiers? tail-declaration-specifier attributes? head-declaration-specifiers?
 tail-declaration-specifier:
     type-specifier
     type-qualifier
@@ -294,131 +278,118 @@ atomic-type-specifier:
     _Atomic_as_specifier '(' type-name ')'
 
 enum-specifier:
-    enum attributes? identifier? '{' enumerator-list '}'
-    enum attributes? identifier? '{' enumerator-list ',' '}'
-    enum attributes? identifier
+    enum attributes? identifier? '{' enumerator-list ','? '}'               #full-enum-specifier
+    enum attributes? identifier                                             #forward-enum-specifier
 
 enumerator-list:
     enumerator
-    enumerator-list ',' enumerator
+    enumerator-list ',' enumerator                                          #multi-enumerator-list
 
 enumerator:
     enumeration-constant
-    enumeration-constant '=' constant-expression
+    enumeration-constant '=' constant-expression                            #initialized-enumerator
 
 enumeration-constant:
     identifier
 
 struct-or-union-specifier:
-    struct-or-union attributes? identifier? '{' struct-contents? '}'
-    struct-or-union attributes? identifier
+    struct-or-union attributes? identifier? '{' struct-declaration-list? '}'    #full-struct-or-union-specifier
+    struct-or-union attributes? identifier                                  #forward-struct-or-union-specifier
 
 struct-or-union:
     struct
     union
 
-struct-contents:
-    struct-declaration-list
+struct-declaration-list:
     struct-declaration-list? struct-declaration
 
-struct-declaration-list:
-    struct-declaration ';'
-    struct-declaration-list struct-declaration ';'
-    struct-declaration-list ';'
-    ';'
-#    pragma
-#    struct-declaration-list pragma
-
 struct-declaration:
-    specifier-qualifier-list struct-declarator-list
-    static-assert-declaration-no-semi
-    __extension__ struct-declaration
-    specifier-qualifier-list
+    specifier-qualifier-list struct-declarator-list? ';'                    #member-declaration
+    static-assert-declaration
+    __extension__ struct-declaration                                        #extension-struct-declaration
+#    pragma (no semicolon)
+    ';'
 
-# TODO fix this properly
 specifier-qualifier-list:
     attributes
-    type-specifier
-    specifier-qualifier-list type-specifier
-    specifier-qualifier-list? type-specifier attributes
-    specifier-qualifier-list? type-qualifier attributes?
+    specifier-qualifier-list? type-specifier attributes?                    #sq-list-specifier
+    specifier-qualifier-list? type-qualifier attributes?                    #sq-list-qualifier
 
 struct-declarator-list:
     struct-declarator
-    struct-declarator-list ',' attributes? struct-declarator
+    struct-declarator-list ',' attributes? struct-declarator                #multi-struct-declarator
 
 struct-declarator:
-    declarator
-    declarator attributes
-    declarator? ':' constant-expression attributes?
+    declarator attributes?                                                  #member-declarator
+    declarator? ':' constant-expression attributes?                         #bitfield-declarator
 
 typeof-specifier:
-    typeof '(' expr-list ')'
-    typeof '(' type-name ')'
+    typeof '(' expr-list ')'                                                #typeof-expr-specifier
+    typeof '(' type-name ')'                                                #typeof-type-specifier
 
 alignment-specifier:
-    _Alignas '(' type-name ')'
-    _Alignas '(' constant-expression ')'
+    _Alignas '(' type-name ')'                                              #alignas-type-specifier
+    _Alignas '(' constant-expression ')'                                    #alignas-expr-specifier
 
 
 declarator:
-    direct-declarator
-    pointer direct-declarator
+    pointer? direct-declarator
 
 direct-declarator:
     identifier
-    '(' attributes? declarator ')'
-    direct-declarator array-declarator
-    direct-declarator '(' parameter-type-list ')'
-    direct-declarator '(' identifier-list? ')'
-    direct-declarator '(' parameter-forward-declarations parameter-type-list? ')'
+    '(' attributes? declarator ')'                                          #paren-direct-declarator
+    direct-declarator array-declarator                                      #array-direct-declarator
+    direct-declarator '(' parameter-type-list ')'                           #fun-direct-declarator
+    direct-declarator '(' identifier-list? ')'                              #legacy-fun-direct-declarator
+    direct-declarator '(' parameter-forward-declarations parameter-type-list? ')'   #forward-param-fun-direct-declarator
 
 
 pointer:
-    '*' type-qualifier-list?
-    '*' type-qualifier-list? pointer
+    '*' type-qualifier-list? pointer?
 
 type-qualifier-list:
     attributes
-    type-qualifier-list? type-qualifier attributes?
+    type-qualifier-list? type-qualifier attributes?                         #q-list-qualifier
 
+# TODO simplify
 array-declarator:
-    '[' type-qualifier-list? assignment-expression? ']'
-    '[' static type-qualifier-list? assignment-expression ']'
-    '[' type-qualifier-list static assignment-expression ']'
-    '[' type-qualifier-list? '*' ']'
+    '[' type-qualifier-list? assignment-expression? ']'                     #simple-array-declarator
+    '[' static type-qualifier-list? assignment-expression ']'               #static-array-declarator
+    '[' type-qualifier-list static assignment-expression ']'                #reverse-static-array-declarator
+    '[' type-qualifier-list? '*' ']'                                        #star-array-declarator
 
 parameter-type-list:
     parameter-list
-    parameter-list ',' '...'
+    parameter-list ',' '...'                                                #variadic-parameter-list
 
 parameter-list:
     parameter-declaration
-    parameter-list ',' parameter-declaration
+    parameter-list ',' parameter-declaration                                #multi-parameter-list
 
 parameter-declaration:
-    declaration-specifiers declarator
-    declaration-specifiers abstract-declarator?
+    declaration-specifiers declarator                                       #concrete-parameter-declaration
+    declaration-specifiers abstract-declarator?                             #abstract-parameter-declaration
 #    pragma parameter-declaration
 
 identifier-list:
     identifier
-    identifier-list ',' identifier
+    identifier-list ',' identifier                                          #multi-identifier-list
 
 abstract-declarator:
-    pointer
     direct-abstract-declarator
-    pointer direct-abstract-declarator
+    pointer direct-abstract-declarator?                                    #pointer-abstract-declarator
 
 direct-abstract-declarator:
-    '(' attributes? abstract-declarator ')'
-    direct-abstract-declarator? array-declarator
-    direct-abstract-declarator? '(' parameter-type-list? ')'
-    direct-abstract-declarator? '(' parameter-forward-declarations parameter-type-list? ')'
+    '(' attributes? abstract-declarator ')'                                 #paren-direct-abstract-declarator
+    direct-abstract-declarator? array-declarator                            #array-direct-abstract-declarator
+    direct-abstract-declarator? '(' parameter-type-list? ')'                #fun-direct-abstract-declarator
+    direct-abstract-declarator? '(' parameter-forward-declarations parameter-type-list? ')' #forward-param-fun-direct-abstract-declarator
 
 parameter-forward-declarations:
+    parameter-forward-declarations? parameter-forward-declaration
+
+parameter-forward-declaration:
     parameter-list ';'
-    parameter-forward-declarations parameter-list ';'
 
 asm-string-literal:
     string-literal
@@ -434,11 +405,11 @@ attribute:
 
 attribute-list:
     attrib
-    attribute-list? ',' attrib?
+    attribute-list? ',' attrib?                                             #multi-attribute-list
 
 attrib:
     any-word
-    any-word '(' expr-list ')'
+    any-word '(' expr-list ')'                                              #attrib-with-arg
 
 any-word:
     identifier
@@ -451,40 +422,40 @@ type-name:
 
 initializer:
     assignment-expression
-    '{' initializer-list? '}'
-    '{' initializer-list ',' '}'
+    '{' initializer-list? '}'                                               #braced-initializer
+    '{' initializer-list ',' '}'                                            #braced-initializer-comma
 
 
 initializer-list:
-    initializer
-    designation initializer
-    initializer-list ',' designation? initializer
+    designated-initializer
+    initializer-list ',' designated-initializer                             #multi-initializer-list
+
+designated-initializer:
+    designation? initializer
 
 designation:
-    designator-list '='
+    designator-list '='                                                     #c99-designation
     array-designator
-    identifier ':'
+    identifier ':'                                                          #gnu-designation
 
 
 designator-list:
-    designator
-    designator-list designator
+    designator-list? designator
 
 designator:
     array-designator
-    '.' identifier
+    '.' identifier                                                          #member-designator
 
 array-designator:
-    '[' constant-expression ']'
-    '[' constant-expression '...' constant-expression ']'
+    '[' constant-expression ']'                                             #array-element-designator
+    '[' constant-expression '...' constant-expression ']'                   #array-range-designator
 
 
 compound-statement:
     '{' label-declarations? block-item-list? '}'
 
 block-item-list:
-    block-item
-    block-item-list block-item
+    block-item-list? block-item
 
 block-item:
     nested-declaration
@@ -493,12 +464,12 @@ block-item:
 
 nested-declaration:
     declaration
-    __extension__ nested-declaration
+    static-assert-declaration
+    __extension__ nested-declaration                                        #extension-nested-declaration
     nested-function-definition
 
 label-declarations:
-    label-declaration
-    label-declarations label-declaration
+    label-declarations? label-declaration
 
 label-declaration:
     __label__ identifier-list ';'
@@ -507,46 +478,39 @@ label-declaration:
 labels:
     labels? label
 label:
-    identifier ':' attributes?
-    case constant-expression ':'
-    default ':'
-    case constant-expression '...' constant-expression ':'
+    identifier ':' attributes?                                              #named-label
+    case constant-expression ':'                                            #case-label
+    default ':'                                                             #default-label
+    case constant-expression '...' constant-expression ':'                  #case-range-label
 
 statement:
-    unlabeled-statement
-    labels unlabeled-statement
+    labels? unlabeled-statement
 unlabeled-statement:
-    compound-statement
-    expression-statement
     if-statement
     if-else-statement
     switch-statement
     while-statement
-    do-statement
     for-statement
-    goto identifier ';'
-    continue ';'
-    break ';'
-    return expr-list? ';'
-    goto '*' expr-list ';'
-    asm-statement
+    unambiguous-statement
 
 statement-except-if:
-    unlabeled-statement-except-if
-    labels unlabeled-statement-except-if
+    labels? unlabeled-statement-except-if
 unlabeled-statement-except-if:
-    compound-statement
-    expression-statement
     if-else-statement-except-if
     switch-statement-except-if
     while-statement-except-if
-    do-statement
     for-statement-except-if
-    goto identifier ';'
-    continue ';'
-    break ';'
-    return expr-list? ';'
-    goto '*' expr-list ';'
+    unambiguous-statement
+
+unambiguous-statement:
+    compound-statement
+    expression-statement
+    do-statement
+    goto identifier ';'                                                     #goto-statement
+    continue ';'                                                            #continue-statement
+    break ';'                                                               #break-statement
+    return expr-list? ';'                                                   #return-statement
+    goto '*' expr-list ';'                                                  #computed-goto-statement
     asm-statement
 
 expression-statement:
@@ -578,187 +542,184 @@ do-statement:
     do statement while condition ';'
 
 for-statement:
-    for '(' expr-list? ';' expr-list? ';' expr-list? ')' statement
-    for '(' nested-declaration expr-list? ';' expr-list? ')' statement
+    for '(' expr-list? ';' expr-list? ';' expr-list? ')' statement          #for-expr-statement
+    for '(' nested-declaration expr-list? ';' expr-list? ')' statement      #for-decl-statement
 for-statement-except-if:
-    for '(' expr-list? ';' expr-list? ';' expr-list? ')' statement-except-if
-    for '(' nested-declaration expr-list? ';' expr-list? ')' statement-except-if
+    for '(' expr-list? ';' expr-list? ';' expr-list? ')' statement-except-if                                                                            #for-expr-statement-except-if
+    for '(' nested-declaration expr-list? ';' expr-list? ')' statement-except-if                                                                        #for-decl-statement-except-if
 
 
 asm-statement:
-    asm type-qualifier? '(' asm-argument ')' ';'
-    asm type-qualifier? goto '(' asm-goto-argument ')' ';'
+    asm type-qualifier? '(' asm-argument ')' ';'                            #asm-common-statement
+    asm type-qualifier? goto '(' asm-goto-argument ')' ';'                  #asm-goto-statement
 
 asm-argument:
     asm-string-literal
-    asm-string-literal ':' asm-operands?
-    asm-string-literal ':' asm-operands? ':' asm-operands?
-    asm-string-literal ':' asm-operands? ':' asm-operands? ':' asm-clobbers?
+    asm-string-literal ':' asm-operands?                                    #asm-argument-out
+    asm-string-literal ':' asm-operands? ':' asm-operands?                  #asm-argument-out-in
+    asm-string-literal ':' asm-operands? ':' asm-operands? ':' asm-clobbers?                                                                            #asm-argument-out-in-clobber
 
 asm-goto-argument:
     asm-string-literal ':' ':' asm-operands? ':' asm-clobbers? ':' asm-goto-operands
 
 asm-operands:
     asm-operand
-    asm-operands ',' asm-operand
+    asm-operands ',' asm-operand                                            #multi-asm-operands
 
 asm-operand:
-    asm-string-literal '(' expr-list ')'
-    '[' identifier ']' asm-string-literal '(' expr-list ')'
+    asm-string-literal '(' expr-list ')'                                    #anonymous-asm-operand
+    '[' identifier ']' asm-string-literal '(' expr-list ')'                 #named-asm-operand
 
 asm-clobbers:
     asm-string-literal
-    asm-clobbers ',' asm-string-literal
+    asm-clobbers ',' asm-string-literal                                     #multi-asm-clobbers
 
 asm-goto-operands:
     identifier
-    asm-goto-operands ',' identifier
+    asm-goto-operands ',' identifier                                        #multi-asm-goto-operands
 
 
 assignment-expression:
     conditional-expression
-    conditional-expression assignment-operator assignment-expression
-
-assignment-operator:
-    '='
-    '*='
-    '/='
-    '%='
-    '+='
-    '-='
-    '<<='
-    '>>='
-    '&='
-    '^='
-    '|='
+    conditional-expression '=' assignment-expression                        #simple-assignment-expression
+    conditional-expression '*=' assignment-expression                       #times-assignment-expression
+    conditional-expression '/=' assignment-expression                       #divide-assignment-expression
+    conditional-expression '%=' assignment-expression                       #modulo-assignment-expression
+    conditional-expression '+=' assignment-expression                       #plus-assignment-expression
+    conditional-expression '-=' assignment-expression                       #minus-assignment-expression
+    conditional-expression '<<=' assignment-expression                      #left-shift-assignment-expression
+    conditional-expression '>>=' assignment-expression                      #right-shift-assignment-expression
+    conditional-expression '&=' assignment-expression                       #bit-and-assignment-expression
+    conditional-expression '^=' assignment-expression                       #bit-xor-assignment-expression
+    conditional-expression '|=' assignment-expression                       #bit-ior-assignment-expression
 
 conditional-expression:
     logical-or-expression
-    logical-or-expression '?' expr-list? ':' conditional-expression
+    logical-or-expression '?' expr-list? ':' conditional-expression         #ternary-expression
 
 
 multiplicative-expression:
-    cast-expression
-    multiplicative-expression '*' cast-expression
-    multiplicative-expression '/' cast-expression
-    multiplicative-expression '%' cast-expression
+    maybe-cast-expression
+    multiplicative-expression '*' maybe-cast-expression                     #times-expression
+    multiplicative-expression '/' maybe-cast-expression                     #divide-expression
+    multiplicative-expression '%' maybe-cast-expression                     #modulo-expression
 
 additive-expression:
     multiplicative-expression
-    additive-expression '+' multiplicative-expression
-    additive-expression '-' multiplicative-expression
+    additive-expression '+' multiplicative-expression                       #plus-expression
+    additive-expression '-' multiplicative-expression                       #minus-expression
 
 shift-expression:
     additive-expression
-    shift-expression '<<' additive-expression
-    shift-expression '>>' additive-expression
+    shift-expression '<<' additive-expression                               #left-shift-expression
+    shift-expression '>>' additive-expression                               #right-shift-expression
 
 relational-expression:
     shift-expression
-    relational-expression '<' shift-expression
-    relational-expression '>' shift-expression
-    relational-expression '<=' shift-expression
-    relational-expression '>=' shift-expression
+    relational-expression '<' shift-expression                              #lt-expression
+    relational-expression '>' shift-expression                              #gt-expression
+    relational-expression '<=' shift-expression                             #le-expression
+    relational-expression '>=' shift-expression                             #ge-expression
 
 equality-expression:
     relational-expression
-    equality-expression '==' relational-expression
-    equality-expression '!=' relational-expression
+    equality-expression '==' relational-expression                          #eq-expression
+    equality-expression '!=' relational-expression                          #ne-expression
 
 and-expression:
     equality-expression
-    and-expression '&' equality-expression
+    and-expression '&' equality-expression                                  #bit-and-expression
 
 exclusive-or-expression:
     and-expression
-    exclusive-or-expression '^' and-expression
+    exclusive-or-expression '^' and-expression                              #bit-xor-expression
 
 inclusive-or-expression:
     exclusive-or-expression
-    inclusive-or-expression '|' exclusive-or-expression
+    inclusive-or-expression '|' exclusive-or-expression                     #bit-ior-expression
 
 logical-and-expression:
     inclusive-or-expression
-    logical-and-expression '&&' inclusive-or-expression
+    logical-and-expression '&&' inclusive-or-expression                     #log-and-expression
 
 logical-or-expression:
     logical-and-expression
-    logical-or-expression '||' logical-and-expression
+    logical-or-expression '||' logical-and-expression                       #log-or-expression
 
 
-cast-expression:
-    unary-expression
-    '(' type-name ')' cast-expression
+maybe-cast-expression:
+    no-cast-expression
+    '(' type-name ')' maybe-cast-expression                                 #actual-cast-expression
 
-unary-expression:
+no-cast-expression:
     postfix-expression
-    '++' cast-expression
-    '--' cast-expression
-    '&' cast-expression
-    '*' cast-expression
-    '+' cast-expression
-    '-' cast-expression
-    '~' cast-expression
-    '!' cast-expression
-    __extension__ cast-expression
-    __real__ cast-expression
-    __imag__ cast-expression
-    sizeof unary-expression
-    sizeof '(' type-name ')'
-    __alignof__ unary-expression
-    __alignof__ '(' type-name ')'
-    '&&' identifier
+    '++' maybe-cast-expression                                              #pre-incr-expression
+    '--' maybe-cast-expression                                              #pre-decr-expression
+    '&' maybe-cast-expression                                               #addressof-expression
+    '*' maybe-cast-expression                                               #deref-expression
+    '+' maybe-cast-expression                                               #unary-plus-expression
+    '-' maybe-cast-expression                                               #unary-minus-expression
+    '~' maybe-cast-expression                                               #bit-not-expression
+    '!' maybe-cast-expression                                               #log-not-expression
+    __extension__ maybe-cast-expression                                     #extension-expression
+    __real__ maybe-cast-expression                                          #real-expression
+    __imag__ maybe-cast-expression                                          #imag-expression
+    sizeof no-cast-expression                                               #sizeof-expression-expression
+    sizeof '(' type-name ')'                                                #sizeof-type-expression
+    __alignof__ no-cast-expression                                          #alignof-expression-expression
+    __alignof__ '(' type-name ')'                                           #alignof-type-expression
+    '&&' identifier                                                         #label-address-expression
 
 generic-selection:
     _Generic '(' assignment-expression ',' generic-assoc-list ')'
 
 generic-assoc-list:
     generic-association
-    generic-assoc-list ',' generic-association
+    generic-assoc-list ',' generic-association                              #multi-generic-assoc-list
 
 generic-association:
-    type-name ':' assignment-expression
-    default ':' assignment-expression
+    type-name ':' assignment-expression                                     #type-generic-association
+    default ':' assignment-expression                                       #default-generic-association
 
 
 postfix-expression:
     primary-expression
-    postfix-expression '[' expr-list ']'
-    postfix-expression '(' expr-list? ')'
-    postfix-expression '.' identifier
-    postfix-expression '->' identifier
-    postfix-expression '++'
-    postfix-expression '--'
-    '(' type-name ')' '{' initializer-list '}'
-    '(' type-name ')' '{' initializer-list ',' '}'
+    postfix-expression '[' expr-list ']'                                    #index-expression
+    postfix-expression '(' expr-list? ')'                                   #call-expression
+    postfix-expression '.' identifier                                       #direct-member-expression
+    postfix-expression '->' identifier                                      #indirect-member-expression
+    postfix-expression '++'                                                 #post-incr-expression
+    postfix-expression '--'                                                 #post-decr-expression
+    '(' type-name ')' '{' initializer-list? '}'                             #compound-literal
+    '(' type-name ')' '{' initializer-list ',' '}'                          #compound-literal-comma
 
 primary-expression:
     identifier
     constant
     string-literal
-    '(' expr-list ')'
+    '(' expr-list ')'                                                       #paren-expression
     generic-selection
     __func__
     __FUNCTION__
     __PRETTY_FUNCTION__
-    '(' compound-statement ')'
-    __builtin_va_arg '(' assignment-expression ',' type-name ')'
-    __builtin_offsetof '(' type-name ',' offsetof-member-designator ')'
-    __builtin_choose_expr '(' assignment-expression ',' assignment-expression ',' assignment-expression ')'
-    __builtin_types_compatible_p '(' type-name ',' type-name ')'
-    __builtin_complex '(' assignment-expression ',' assignment-expression ')'
-    __builtin_shuffle '(' assignment-expression ',' assignment-expression ')'
-    __builtin_shuffle '(' assignment-expression ',' assignment-expression ',' assignment-expression ')'
+    '(' compound-statement ')'                                              #gnu-statement-expression
+    __builtin_va_arg '(' assignment-expression ',' type-name ')'            #builtin-va-arg-expression
+    __builtin_offsetof '(' type-name ',' offsetof-member-designator ')'     #builtin-offsetof-expression
+    __builtin_choose_expr '(' assignment-expression ',' assignment-expression ',' assignment-expression ')' #builtin-choose-expr-expression
+    __builtin_types_compatible_p '(' type-name ',' type-name ')'            #builtin-types-compatible-p-expression
+    __builtin_complex '(' assignment-expression ',' assignment-expression ')'   #builtin-complex-expression
+    __builtin_shuffle '(' assignment-expression ',' assignment-expression ')'   #builtin-simple-shuffle-expression
+    __builtin_shuffle '(' assignment-expression ',' assignment-expression ',' assignment-expression ')' #builtin-mix-shuffle-expression
 
 offsetof-member-designator:
     identifier
-    offsetof-member-designator '.' identifier
-    offsetof-member-designator '[' expr-list ']'
+    offsetof-member-designator '.' identifier                               #named-member-offset-designator
+    offsetof-member-designator '[' expr-list ']'                            #array-member-offset-designator
 
 
 expr-list:
     assignment-expression
-    expr-list ',' assignment-expression
+    expr-list ',' assignment-expression                                     #multi-expr-list
 
 
 constant:

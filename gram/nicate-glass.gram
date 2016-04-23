@@ -9,7 +9,6 @@ keyword default
 keyword do
 keyword else
 keyword enum
-keyword extern
 #keyword for
 keyword fun
 keyword goto
@@ -89,38 +88,37 @@ stmt:
     attr-stmt
     noattr-stmt
 attr-stmt:
-    attr attr-stmt
-    union id maybe-struct-body
-    struct id maybe-struct-body
-    enum id maybe-enum-body
-    fun fun-sig maybe-compound-stmt
-    assign? ';'
-    extern typed-id ';'
-    let typed-id ';'
-    let typed-id '=' expr ';'
+    attr attr-stmt                                          #annotated-statement
+    union id maybe-struct-body                              #union-statement
+    struct id maybe-struct-body                             #struct-statement
+    enum id maybe-enum-body                                 #enum-statement
+    fun fun-sig maybe-compound-stmt                         #fun-statment
+    assign? ';'                                             #expr-statement
+    let typed-id ';'                                        #declaration
+    let typed-id '=' expr ';'                               #initialized-declaration
 noattr-stmt:
     comment
-    id ':' stmt
-    default ':' stmt
-    case expr ':' stmt
-    while '(' expr ')' compound-stmt
-    do compound-stmt while '(' expr ')' ';'
-    goto id ';'
-    break ';'
-    continue ';'
-    return expr? ';'
-    switch '(' expr ')' compound-stmt
+    id ':' stmt                                             #labeled-statement
+    default ':' stmt                                        #default-statement
+    case expr ':' stmt                                      #case-statement
+    while '(' expr ')' compound-stmt                        #while-statement
+    do compound-stmt while '(' expr ')' ';'                 #do-statement
+    goto id ';'                                             #goto-statement
+    break ';'                                               #break-statement
+    continue ';'                                            #continue-statement
+    return expr? ';'                                        #return-statement
+    switch '(' expr ')' compound-stmt                       #switch-statement
     if-or-compound-stmt
 if-or-compound-stmt:
     compound-stmt
-    if '(' expr ')' compound-stmt
-    if '(' expr ')' compound-stmt else if-or-compound-stmt
+    if '(' expr ')' compound-stmt                           #if-statement
+    if '(' expr ')' compound-stmt else if-or-compound-stmt  #if-else-statement
 maybe-struct-body:
     ';'
-    '{' typed-id-list? '}'
+    '{' typed-id-list? '}'                                  #struct-body
 maybe-enum-body:
     ';'
-    '{' id-list? '}'
+    '{' id-list? '}'                                        #enum-body
 fun-sig:
     '(' typed-id-list? ')' '->' expr
 maybe-compound-stmt:
@@ -131,87 +129,88 @@ compound-stmt:
 typed-id:
     id ':' expr
 typed-id-list:
-    typed-id-list ',' typed-id
+    typed-id-list ',' typed-id                              #multi-typed-id-list
     typed-id
 id-list:
-    id-list ',' id
+    id-list ',' id                                          #multi-id-list
     id
 expr-list:
-    expr-list ',' expr
+    expr-list ',' expr                                      #multi-expr-list
     expr
 stmt-list:
     stmt-list? stmt
 assign:
-    expr '=' assign
-    expr '*=' expr
-    expr '/=' expr
-    expr '%=' expr
-    expr '+=' expr
-    expr '-=' expr
-    expr '<<=' expr
-    expr '>>=' expr
-    expr '&=' expr
-    expr '^=' expr
-    expr '|=' expr
+    expr '=' assign                                         #simple-assign
+    expr '*=' expr                                          #times-assign
+    expr '/=' expr                                          #divide-assign
+    expr '%=' expr                                          #modulo-assign
+    expr '+=' expr                                          #plus-assign
+    expr '-=' expr                                          #minus-assign
+    expr '<<=' expr                                         #left-shift-assign
+    expr '>>=' expr                                         #right-shift-assign
+    expr '&=' expr                                          #bit-and-assign
+    expr '^=' expr                                          #bit-xor-assign
+    expr '|=' expr                                          #bit-or-assign
     expr
 expr:
     logical-or-expr
 mul-expr:
     unary-expr
-    mul-expr '*' unary-expr
-    mul-expr '/' unary-expr
-    mul-expr '%' unary-expr
+    mul-expr '*' unary-expr                                 #times-expr
+    mul-expr '/' unary-expr                                 #divide-expr
+    mul-expr '%' unary-expr                                 #modulo-expr
 add-expr:
     mul-expr
-    add-expr '+' mul-expr
-    add-expr '-' mul-expr
+    add-expr '+' mul-expr                                   #plus-expr
+    add-expr '-' mul-expr                                   #minus-expr
 shift-expr:
     add-expr
-    shift-expr '<<' add-expr
-    shift-expr '>>' add-expr
+    shift-expr '<<' add-expr                                #left-shift-expr
+    shift-expr '>>' add-expr                                #right-shift-expr
 cmp-expr:
     shift-expr
-    shift-expr '<' shift-expr
-    shift-expr '>' shift-expr
-    shift-expr '<=' shift-expr
-    shift-expr '>=' shift-expr
-    shift-expr '==' shift-expr
-    shift-expr '!=' shift-expr
+    shift-expr '<' shift-expr                               #lt-expr
+    shift-expr '>' shift-expr                               #gt-expr
+    shift-expr '<=' shift-expr                              #le-expr
+    shift-expr '>=' shift-expr                              #ge-expr
+    shift-expr '==' shift-expr                              #eq-expr
+    shift-expr '!=' shift-expr                              #ne-expr
 bitwise-and-expr:
     cmp-expr
-    bitwise-and-expr '&' cmp-expr
+    bitwise-and-expr '&' cmp-expr                           #bit-and-expr
 bitwise-xor-expr:
     bitwise-and-expr
-    bitwise-xor-expr '^' bitwise-and-expr
+    bitwise-xor-expr '^' bitwise-and-expr                   #bit-xor-expr
 bitwise-ior-expr:
     bitwise-xor-expr
-    bitwise-ior-expr '|' bitwise-xor-expr
+    bitwise-ior-expr '|' bitwise-xor-expr                   #bit-ior-expr
 logical-and-expr:
     bitwise-ior-expr
-    logical-and-expr '&&' bitwise-ior-expr
+    logical-and-expr '&&' bitwise-ior-expr                  #log-and-expr
 logical-or-expr:
     logical-and-expr
-    logical-or-expr '||' logical-and-expr
+    logical-or-expr '||' logical-and-expr                   #log-or-expr
 unary-expr:
     postfix-expr
-    '++' unary-expr
-    '--' unary-expr
-    '&' unary-expr
-    '+' unary-expr
-    '-' unary-expr
-    '~' unary-expr
-    '!' unary-expr
+    '++' unary-expr                                         #pre-incr-expr
+    '--' unary-expr                                         #pre-decr-expr
+    '&' unary-expr                                          #addressof-expr
+    '+' unary-expr                                          #unary-plus-expr
+    '-' unary-expr                                          #unary-minus-expr
+    '~' unary-expr                                          #bit-not-expr
+    '!' unary-expr                                          #log-not-expr
 postfix-expr:
     primary-expr
-    postfix-expr '[' expr-list? ']'
-    postfix-expr '(' expr-list? ')'
-    postfix-expr '.' id
-    postfix-expr '++'
-    postfix-expr '--'
+    postfix-expr '[' expr-list? ']'                         #index-expr
+    postfix-expr '(' expr-list? ')'                         #call-expr
+    postfix-expr '.' id                                     #member-expr
+    postfix-expr '++'                                       #post-incr-expr
+    postfix-expr '--'                                       #post-decr-expr
 primary-expr:
     id
     literal
-    '(' expr-list? ')'
+# TODO decide whether to support `'(' assign ')'` or `'(' expr-list? ')'`
+    '(' expr ')'                                            #paren-expr
 literal:
     decimal-floating-literal
     hexadecimal-floating-literal

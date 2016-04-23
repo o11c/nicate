@@ -162,20 +162,27 @@ class Grammar:
                     self.start = IdentifierCase(words[1])
                     continue
                 raise GrammarError(i, 'expected start')
-            if line.endswith(':') and len(line) != 1 and len(words) == 1:
+            tag = None
+            if words[-1].startswith('#'):
+                tag = words.pop()[1:]
+                assert tag != ''
+            if line.endswith(':'):
+                assert len(line) != 1 and len(words) == 1 and tag is None
                 if not orig_line[0].strip():
                     raise GrammarError(i, 'Rule names should not be indented')
                 if cur_rule is not None:
-                    self.add_rule(cur_name, cur_rule)
+                    self.add_rule(cur_name, cur_rule, cur_tags)
                 cur_name = line[:-1]
                 cur_rule = []
+                cur_tags = []
             else:
                 if orig_line[0].strip():
                     raise GrammarError(i, 'Rule bodies should be indented')
                 cur_rule.append(words)
+                cur_tags.append(tag)
         if cur_rule is None:
             raise GrammarError('eof', 'no rules')
-        self.add_rule(cur_name, cur_rule)
+        self.add_rule(cur_name, cur_rule, cur_tags)
         self.patterns.append(Term(IdentifierCase('whitespace'), True, regex=whitespace))
 
         print('%s: %d rules parsed; resolving cross-references ...' % (self.language.visual, len(self.rules)))
@@ -244,10 +251,12 @@ class Grammar:
         regex = re_escape(sym)
         self.set_rule(sym, Term(IdentifierCase('sym-' + ty, sym), False, regex))
 
-    def add_rule(self, name, alts):
+    def add_rule(self, name, alts, tags):
+        assert len(alts) == len(tags)
         if len(alts) == 0:
             raise GrammarError(name, 'empty rule')
         elif len(alts) == 1:
+            assert tags[0] is None, tags[0]
             if len(alts[0]) == 1:
                 self.set_rule(name, Alias(name, self.get_rule(alts[0][0])))
             else:
@@ -255,15 +264,20 @@ class Grammar:
         else:
             for i, a in enumerate(alts):
                 if len(a) != 1:
-                    alts[i] = [self.anon_seq(alts[i])]
+                    alts[i] = [self.anon_seq(alts[i], tags[i])]
+                else:
+                    assert tags[i] is None
             self.set_rule(name, Alternative(name, [self.get_rule(a) for a, in alts]))
 
-    def anon_seq(self, bits):
+    def anon_seq(self, bits, tag):
         rule_bits = [self.get_rule(a) for a in bits]
-        tag = '-'.join([r.tag.dash.split('-', 1)[1] if isinstance(r, Rule) else r.dash for r in rule_bits])
-        tag = 'anon-' + tag
+        if tag:
+            tag = 'tag-' + tag
+        else:
+            tag = '-'.join([r.tag.dash.split('-', 1)[1] if isinstance(r, Rule) else r.dash for r in rule_bits])
+            tag = 'anon-' + tag
         if tag in self.rules:
-            print('Warning: coalescing multiple anonymous sequences: %s.' % tag)
+            print('Warning: coalescing multiple tagged or anonymous sequences: %s.' % tag)
             assert isinstance(self.rules[tag], Sequence)
             assert self.rules[tag].bits == rule_bits
         else:
@@ -298,6 +312,9 @@ class Rule:
         # note: do *not* include `bits` here, because that would recurse
         return '%s(%r)' % (self.__class__.__name__, self.tag)
 
+    def struct_tag(self):
+        return self.tag
+
 class Term(Rule):
     __slots__ = ('tag', 'is_atom', 'regex')
     def __init__(self, tag, is_atom, regex):
@@ -308,8 +325,8 @@ class Term(Rule):
     def nullable(self, stack=None):
         return False
 
-    def comment(self):
-        return '%%%%token %s' % self.tag.dash
+    def comment(self, lang):
+        return 'Term'
 
 class Option(Rule):
     __slots__ = ('tag', 'child')
@@ -322,8 +339,13 @@ class Option(Rule):
             assert not self.child.nullable(stack)
         return True
 
-    def comment(self):
-        return '%s: %s | %%%%empty;' % (self.tag.dash, self.child.tag.dash)
+    def comment(self, lang):
+        return '%s | %s' % ((lang + self.child.tag).camel, (lang + 'nothing').camel)
+
+    def struct_tag(self):
+        child_tag = self.child.struct_tag()
+        child_tag = IdentifierCase(child_tag.dash.split('-', 1)[1])
+        return 'opt' + child_tag
 
 class Star(Rule):
     __slots__ = ('tag', 'child')
@@ -337,8 +359,11 @@ class Star(Rule):
             assert not self.child.nullable(stack)
         return True
 
-    def comment(self):
-        return '%s: repeat(%s) | %%%%empty;' % (self.tag.dash, self.child.tag.dash)
+    def comment(self, lang):
+        return '%s | %s' % ((lang + 'repeat' + self.child.tag).camel, (lang + 'nothing').camel)
+
+    def struct_tag(self):
+        return 'star' + self.child.struct_tag()
 
 class Plus(Rule):
     __slots__ = ('tag', 'child')
@@ -352,8 +377,11 @@ class Plus(Rule):
             assert not self.child.nullable(stack)
         return False
 
-    def comment(self):
-        return '%s: repeat(%s);' % (self.tag.dash, self.child.tag.dash)
+    def comment(self, lang):
+        return (lang + 'repeat' + self.child.tag).camel
+
+    def struct_tag(self):
+        return 'plus' + self.child.struct_tag()
 
 class Alias(Rule):
     __slots__ = ('tag', 'child')
@@ -366,8 +394,11 @@ class Alias(Rule):
             return False
         return self.child.nullable(stack)
 
-    def comment(self):
-        return '%s: %s;' % (self.tag.dash, self.child.tag.dash)
+    def comment(self, lang):
+        return 'Alias'
+
+    def struct_tag(self):
+        return self.child.struct_tag()
 
 class Sequence(Rule):
     __slots__ = ('tag', 'bits')
@@ -385,8 +416,8 @@ class Sequence(Rule):
         finally:
             stack.pop()
 
-    def comment(self):
-        return '%s: %s;' % (self.tag.dash, ' '.join(b.tag.dash for b in self.bits))
+    def comment(self, lang):
+        return ' '.join((lang + b.tag).camel for b in self.bits)
 
 class Alternative(Rule):
     __slots__ = ('tag', 'bits')
@@ -404,8 +435,8 @@ class Alternative(Rule):
         finally:
             stack.pop()
 
-    def comment(self):
-        return '%s: %s;' % (self.tag.dash, ' | '.join(b.tag.dash for b in self.bits))
+    def comment(self, lang):
+        return ' | '.join((lang + b.tag).camel for b in self.bits)
 
 class FormatArgs:
     pass
@@ -466,10 +497,11 @@ def emit(grammar, header, source):
     h('typedef struct %(Ast)s %(Ast)s;')
     h()
     h('typedef struct %(Nothing)s %(Nothing)s;')
-    for ast in ast_values:
-        h('/* %s */' % ast.comment())
-        h('typedef struct {0} {0};'.format((lang + ast.tag).camel))
     h()
+    for ast in ast_values:
+        h('/* %s */' % ast.comment(lang))
+        h('typedef struct {} {};'.format((lang + ast.struct_tag()).camel, (lang + ast.tag).camel))
+        h()
     c('/* Concrete types only. */')
     c('typedef enum %(AstType)s %(AstType)s;')
     c('enum %(AstType)s')
@@ -511,12 +543,33 @@ def emit(grammar, header, source):
     c('static %(Ast)s *%(create_nonterminal)s(Pool *pool, %(AstType)s type, size_t nargs, %(Ast)s **args)')
     c('{')
     c('    %(Ast)s rv;')
-    c('    size_t i;')
+    c('    size_t i, only = (size_t)-2;')
     c('    assert (nargs >= 2);')
+    c('    for (i = 0; i < nargs; ++i)')
+    c('    {')
+    c('        if (!%(is_nothing)s(args[i]))')
+    c('        {')
+    c('            if (only == (size_t)-2)')
+    c('            {')
+    c('                only = i;')
+    c('            }')
+    c('            else')
+    c('            {')
+    c('                only = (size_t)-1;')
+    c('                break;')
+    c('            }')
+    c('        }')
+    c('')
+    c('    }')
+    c('    assert (only != (size_t)-2);')
+    c('    if (only != (size_t)-1)')
+    c('    {')
+    c('        return args[only];')
+    c('    }')
     c('    memset(&rv, 0, sizeof(rv));')
     c('    rv.type = type;')
-    c('    rv.total_tokens = args[0]->total_tokens;')
-    c('    for (i = 1; i < nargs; ++i)')
+    c('    rv.total_tokens = 0;')
+    c('    for (i = 0; i < nargs; ++i)')
     c('    {')
     c('        rv.total_tokens += args[i]->total_tokens;')
     c('    }')
@@ -566,7 +619,16 @@ def emit(grammar, header, source):
         s('bool %s(%%(Ast)s *ast)' % (lang + 'is' + ast.tag).lower)
         c('{')
         if isinstance(ast, (Term, Sequence)):
-            c('    return ast->type == %s;' % (lang + ast.tag).upper)
+            head = 'return'
+            if isinstance(ast, Sequence):
+                nn = []
+                for bit in ast.bits:
+                    if not bit.nullable():
+                        nn.append(bit)
+                assert len(nn) != 0
+                if len(nn) == 1:
+                    head = 'return %s(ast) ||' % (lang + 'is' + nn[0].tag).lower
+            c('    %s ast->type == %s;' % (head, (lang + ast.tag).upper))
         if isinstance(ast, Option):
             c('    return %%(is_nothing)s(ast) || %s(ast);' % (lang + 'is' + ast.child.tag).lower)
         if isinstance(ast, Alias):
@@ -597,37 +659,37 @@ def emit(grammar, header, source):
     c('        bool no_space = false;')
     if lang.upper == 'GNU_C':
         # sorry, other languages don't get pretty-printing yet.
-        c('        newline |= strcmp(prev, ";") == 0 && prev_parent != %(upper)s_TREE_ANON_FOR_LPAREN_EXPR_LIST_SEMICOLON_EXPR_LIST_SEMICOLON_EXPR_LIST_RPAREN_STATEMENT && prev_parent != %(upper)s_TREE_ANON_FOR_LPAREN_EXPR_LIST_SEMICOLON_EXPR_LIST_SEMICOLON_EXPR_LIST_RPAREN_STATEMENT_EXCEPT_IF && prev_parent != %(upper)s_TREE_ANON_FOR_LPAREN_NESTED_DECLARATION_EXPR_LIST_SEMICOLON_EXPR_LIST_RPAREN_STATEMENT && prev_parent != %(upper)s_TREE_ANON_FOR_LPAREN_NESTED_DECLARATION_EXPR_LIST_SEMICOLON_EXPR_LIST_RPAREN_STATEMENT_EXCEPT_IF;')
-        c('        newline |= strcmp(next, "{") == 0 && next_parent != %(upper)s_TREE_ANON_LBRACE_INITIALIZER_LIST_COMMA_RBRACE && next_parent != %(upper)s_TREE_ANON_LBRACE_INITIALIZER_LIST_RBRACE;')
-        c('        newline |= strcmp(prev, "{") == 0 && prev_parent != %(upper)s_TREE_ANON_LBRACE_INITIALIZER_LIST_COMMA_RBRACE && prev_parent != %(upper)s_TREE_ANON_LBRACE_INITIALIZER_LIST_RBRACE;')
-        c('        newline |= strcmp(next, "}") == 0 && next_parent != %(upper)s_TREE_ANON_LBRACE_INITIALIZER_LIST_COMMA_RBRACE && next_parent != %(upper)s_TREE_ANON_LBRACE_INITIALIZER_LIST_RBRACE;')
-        c('        newline |= strcmp(prev, "}") == 0 && prev_parent != %(upper)s_TREE_ANON_LBRACE_INITIALIZER_LIST_COMMA_RBRACE && prev_parent != %(upper)s_TREE_ANON_LBRACE_INITIALIZER_LIST_RBRACE && strcmp(next, ";") != 0;')
+        c('        newline |= strcmp(prev, ";") == 0 && prev_parent != %(upper)s_TREE_TAG_FOR_EXPR_STATEMENT && prev_parent != %(upper)s_TREE_TAG_FOR_EXPR_STATEMENT_EXCEPT_IF && prev_parent != %(upper)s_TREE_TAG_FOR_DECL_STATEMENT && prev_parent != %(upper)s_TREE_TAG_FOR_DECL_STATEMENT_EXCEPT_IF;')
+        c('        newline |= strcmp(next, "{") == 0 && next_parent != %(upper)s_TREE_TAG_BRACED_INITIALIZER_COMMA && next_parent != %(upper)s_TREE_TAG_BRACED_INITIALIZER;')
+        c('        newline |= strcmp(prev, "{") == 0 && prev_parent != %(upper)s_TREE_TAG_BRACED_INITIALIZER_COMMA && prev_parent != %(upper)s_TREE_TAG_BRACED_INITIALIZER;')
+        c('        newline |= strcmp(next, "}") == 0 && next_parent != %(upper)s_TREE_TAG_BRACED_INITIALIZER_COMMA && next_parent != %(upper)s_TREE_TAG_BRACED_INITIALIZER;')
+        c('        newline |= strcmp(prev, "}") == 0 && prev_parent != %(upper)s_TREE_TAG_BRACED_INITIALIZER_COMMA && prev_parent != %(upper)s_TREE_TAG_BRACED_INITIALIZER && strcmp(next, ";") != 0;')
         c('        no_space |= strcmp(prev, "(") == 0;')
-        c('        no_space |= strcmp(next, "(") == 0 && (next_parent == %(upper)s_TREE_ANON_POSTFIX_EXPRESSION_LPAREN_EXPR_LIST_RPAREN || next_parent == %(upper)s_TREE_ANON_DIRECT_DECLARATOR_LPAREN_IDENTIFIER_LIST_RPAREN || next_parent == %(upper)s_TREE_ANON_DIRECT_DECLARATOR_LPAREN_PARAMETER_FORWARD_DECLARATIONS_PARAMETER_TYPE_LIST_RPAREN || next_parent == %(upper)s_TREE_ANON_DIRECT_DECLARATOR_LPAREN_PARAMETER_TYPE_LIST_RPAREN || next_parent == %(upper)s_TREE_ANON_DIRECT_ABSTRACT_DECLARATOR_LPAREN_PARAMETER_FORWARD_DECLARATIONS_PARAMETER_TYPE_LIST_RPAREN || next_parent == %(upper)s_TREE_ANON_DIRECT_ABSTRACT_DECLARATOR_LPAREN_PARAMETER_TYPE_LIST_RPAREN);')
+        c('        no_space |= strcmp(next, "(") == 0 && (next_parent == %(upper)s_TREE_TAG_CALL_EXPRESSION || next_parent == %(upper)s_TREE_TAG_LEGACY_FUN_DIRECT_DECLARATOR || next_parent == %(upper)s_TREE_TAG_FORWARD_PARAM_FUN_DIRECT_DECLARATOR || next_parent == %(upper)s_TREE_TAG_FUN_DIRECT_DECLARATOR || next_parent == %(upper)s_TREE_TAG_FORWARD_PARAM_FUN_DIRECT_ABSTRACT_DECLARATOR || next_parent == %(upper)s_TREE_TAG_FUN_DIRECT_ABSTRACT_DECLARATOR);')
         c('        no_space |= strcmp(next, ")") == 0;')
         c('        no_space |= strcmp(prev, "[") == 0;')
         c('        no_space |= strcmp(next, "[") == 0;')
         c('        no_space |= strcmp(next, "]") == 0;')
         c('        no_space |= strcmp(next, ",") == 0;')
         c('        no_space |= strcmp(next, ";") == 0;')
-        c('        no_space |= strcmp(prev, "*") == 0 && (prev_parent == %(upper)s_TREE_ANON_STAR_TYPE_QUALIFIER_LIST || prev_parent == %(upper)s_TREE_ANON_STAR_TYPE_QUALIFIER_LIST_POINTER);')
-        c('        no_space |= strcmp(next, ":") == 0 && (next_parent == %(upper)s_TREE_ANON_IDENTIFIER_COLON || next_parent == %(upper)s_TREE_ANON_IDENTIFIER_COLON_ATTRIBUTES || next_parent == %(upper)s_TREE_ANON_CASE_CONSTANT_EXPRESSION_COLON || next_parent == %(upper)s_TREE_ANON_CASE_CONSTANT_EXPRESSION_ELLIPSIS_CONSTANT_EXPRESSION_COLON || next_parent == %(upper)s_TREE_ANON_DEFAULT_COLON || next_parent == %(upper)s_TREE_ANON_DEFAULT_COLON_ASSIGNMENT_EXPRESSION || next_parent == %(upper)s_TREE_ANON_TYPE_NAME_COLON_ASSIGNMENT_EXPRESSION);')
+        c('        no_space |= strcmp(prev, "*") == 0 && (prev_parent == %(upper)s_TREE_POINTER || prev_parent == %(upper)s_TREE_DECLARATOR);')
+        c('        no_space |= strcmp(next, ":") == 0 && (next_parent == %(upper)s_TREE_TAG_NAMED_LABEL || next_parent == %(upper)s_TREE_TAG_CASE_LABEL || next_parent == %(upper)s_TREE_TAG_CASE_RANGE_LABEL || next_parent == %(upper)s_TREE_TAG_DEFAULT_LABEL || next_parent == %(upper)s_TREE_TAG_DEFAULT_GENERIC_ASSOCIATION || next_parent == %(upper)s_TREE_TAG_TYPE_GENERIC_ASSOCIATION);')
         c('        no_space |= strcmp(prev, ".") == 0;')
         c('        no_space |= strcmp(next, ".") == 0;')
         c('        no_space |= strcmp(prev, "->") == 0;')
         c('        no_space |= strcmp(next, "->") == 0;')
-        c('        no_space |= strcmp(next, "++") == 0 && next_parent == %(upper)s_TREE_ANON_POSTFIX_EXPRESSION_INCR;')
-        c('        no_space |= strcmp(next, "--") == 0 && next_parent == %(upper)s_TREE_ANON_POSTFIX_EXPRESSION_DECR;')
-        c('        no_space |= strcmp(prev, "++") == 0 && prev_parent == %(upper)s_TREE_ANON_INCR_CAST_EXPRESSION;')
-        c('        no_space |= strcmp(prev, "--") == 0 && prev_parent == %(upper)s_TREE_ANON_DECR_CAST_EXPRESSION;')
-        c('        no_space |= strcmp(prev, "&") == 0 && next[0] != \'&\' && prev_parent == %(upper)s_TREE_ANON_AMPERSAND_CAST_EXPRESSION;')
-        c('        no_space |= strcmp(prev, "*") == 0 && prev_parent == %(upper)s_TREE_ANON_STAR_CAST_EXPRESSION;')
-        c('        no_space |= strcmp(prev, "+") == 0 && next[0] != \'+\' && prev_parent == %(upper)s_TREE_ANON_PLUS_CAST_EXPRESSION;')
-        c('        no_space |= strcmp(prev, "-") == 0 && next[0] != \'-\' && prev_parent == %(upper)s_TREE_ANON_MINUS_CAST_EXPRESSION;')
-        c('        no_space |= strcmp(prev, "~") == 0 && prev_parent == %(upper)s_TREE_ANON_TILDE_CAST_EXPRESSION;')
-        c('        no_space |= strcmp(prev, "!") == 0 && prev_parent == %(upper)s_TREE_ANON_BANG_CAST_EXPRESSION;')
+        c('        no_space |= strcmp(next, "++") == 0 && next_parent == %(upper)s_TREE_TAG_POST_INCR_EXPRESSION;')
+        c('        no_space |= strcmp(next, "--") == 0 && next_parent == %(upper)s_TREE_TAG_POST_DECR_EXPRESSION;')
+        c('        no_space |= strcmp(prev, "++") == 0 && prev_parent == %(upper)s_TREE_TAG_PRE_INCR_EXPRESSION;')
+        c('        no_space |= strcmp(prev, "--") == 0 && prev_parent == %(upper)s_TREE_TAG_PRE_DECR_EXPRESSION;')
+        c('        no_space |= strcmp(prev, "&") == 0 && next[0] != \'&\' && prev_parent == %(upper)s_TREE_TAG_ADDRESSOF_EXPRESSION;')
+        c('        no_space |= strcmp(prev, "*") == 0 && prev_parent == %(upper)s_TREE_TAG_DEREF_EXPRESSION;')
+        c('        no_space |= strcmp(prev, "+") == 0 && next[0] != \'+\' && prev_parent == %(upper)s_TREE_TAG_UNARY_PLUS_EXPRESSION;')
+        c('        no_space |= strcmp(prev, "-") == 0 && next[0] != \'-\' && prev_parent == %(upper)s_TREE_TAG_UNARY_MINUS_EXPRESSION;')
+        c('        no_space |= strcmp(prev, "~") == 0 && prev_parent == %(upper)s_TREE_TAG_BIT_NOT_EXPRESSION;')
+        c('        no_space |= strcmp(prev, "!") == 0 && prev_parent == %(upper)s_TREE_TAG_LOG_NOT_EXPRESSION;')
         c('        no_space |= strcmp(prev, "sizeof") == 0 && strcmp(next, "(") == 0;')
-        c('        no_space |= strcmp(prev, ")") == 0 && (prev_parent == %(upper)s_TREE_ANON_LPAREN_TYPE_NAME_RPAREN_LBRACE_INITIALIZER_LIST_COMMA_RBRACE || prev_parent == %(upper)s_TREE_ANON_LPAREN_TYPE_NAME_RPAREN_LBRACE_INITIALIZER_LIST_RBRACE || prev_parent == %(upper)s_TREE_ANON_LPAREN_TYPE_NAME_RPAREN_CAST_EXPRESSION);')
+        c('        no_space |= strcmp(prev, ")") == 0 && (prev_parent == %(upper)s_TREE_TAG_COMPOUND_LITERAL_COMMA || prev_parent == %(upper)s_TREE_TAG_COMPOUND_LITERAL || prev_parent == %(upper)s_TREE_TAG_ACTUAL_CAST_EXPRESSION);')
     else:
         c('        (void)prev_parent;')
     c('        if (newline)')
@@ -661,7 +723,7 @@ def emit(grammar, header, source):
     s('void %(emit)s(%(Ast)s *ast, FILE *fp)')
     c('{')
     c('    IndentationInfo info;')
-    c('    memset(&info, 0, sizeof(info));');
+    c('    memset(&info, 0, sizeof(info));')
     c('    %(emit_impl)s(ast, %(NOTHING)s, fp, &info);')
     c('    fputc(\'\\n\', fp);')
     c('}')

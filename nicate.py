@@ -210,11 +210,8 @@ class Lexicon:
     __slots__ = ('_c_lexicon', '_names', '_regexes')
 
     def __init__(self, symbols):
-        import time
         syms = [(new_string(s.name), new_string(s.regex)) for s in symbols]
-        print('lex0', time.time())
         self._c_lexicon = nicate_library.lexicon_create(len(syms), nicate_ffi.new('Symbol[]', syms))
-        print('lex1', time.time())
         self._names = ['error'] + [s.name for s in symbols]
         self._regexes = ['(.)'] + [s.regex for s in symbols]
         for i in range(len(symbols)):

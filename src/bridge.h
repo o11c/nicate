@@ -103,23 +103,23 @@ struct Builder
     GnuCKwWhile *kw_while;
 
     /* types (in non-struct declarations) */
-    GnuCAnyTailDeclarationSpecifiers *ty_void_ds;
-    GnuCAnyTailDeclarationSpecifiers *ty_char_ds;
-    GnuCAnyTailDeclarationSpecifiers *ty_signed_char_ds;
-    GnuCAnyTailDeclarationSpecifiers *ty_unsigned_char_ds;
+    GnuCTreeTailDeclarationSpecifiers *ty_void_ds;
+    GnuCTreeTailDeclarationSpecifiers *ty_char_ds;
+    GnuCTreeTailDeclarationSpecifiers *ty_signed_char_ds;
+    GnuCTreeTailDeclarationSpecifiers *ty_unsigned_char_ds;
 
-    GnuCAnyTailDeclarationSpecifiers *ty_signed_short_ds;
-    GnuCAnyTailDeclarationSpecifiers *ty_unsigned_short_ds;
-    GnuCAnyTailDeclarationSpecifiers *ty_signed_int_ds;
-    GnuCAnyTailDeclarationSpecifiers *ty_unsigned_int_ds;
-    GnuCAnyTailDeclarationSpecifiers *ty_signed_long_ds;
-    GnuCAnyTailDeclarationSpecifiers *ty_unsigned_long_ds;
-    GnuCAnyTailDeclarationSpecifiers *ty_signed_long_long_ds;
-    GnuCAnyTailDeclarationSpecifiers *ty_unsigned_long_long_ds;
+    GnuCTreeTailDeclarationSpecifiers *ty_signed_short_ds;
+    GnuCTreeTailDeclarationSpecifiers *ty_unsigned_short_ds;
+    GnuCTreeTailDeclarationSpecifiers *ty_signed_int_ds;
+    GnuCTreeTailDeclarationSpecifiers *ty_unsigned_int_ds;
+    GnuCTreeTailDeclarationSpecifiers *ty_signed_long_ds;
+    GnuCTreeTailDeclarationSpecifiers *ty_unsigned_long_ds;
+    GnuCTreeTailDeclarationSpecifiers *ty_signed_long_long_ds;
+    GnuCTreeTailDeclarationSpecifiers *ty_unsigned_long_long_ds;
 
-    GnuCAnyTailDeclarationSpecifiers *ty_float_ds;
-    GnuCAnyTailDeclarationSpecifiers *ty_double_ds;
-    GnuCAnyTailDeclarationSpecifiers *ty_long_double_ds;
+    GnuCTreeTailDeclarationSpecifiers *ty_float_ds;
+    GnuCTreeTailDeclarationSpecifiers *ty_double_ds;
+    GnuCTreeTailDeclarationSpecifiers *ty_long_double_ds;
 
     /* types (in struct declarations and bare type names) */
     GnuCAnySpecifierQualifierList *ty_void_sql;
@@ -194,7 +194,7 @@ struct BuildType
     {
         struct
         {
-            GnuCAnyTailDeclarationSpecifiers *ast_dspec;
+            GnuCTreeTailDeclarationSpecifiers *ast_dspec;
             GnuCAnySpecifierQualifierList *ast_sql;
         } spec;
         struct
@@ -230,7 +230,7 @@ struct BuildExpression
 struct BuildTypePairDeclarator
 {
     GnuCAnyDeclarationSpecifiers *specs;
-    GnuCAnyDeclarator *decl;
+    GnuCTreeDeclarator *decl;
 };
 struct BuildTypePairAbstractDeclarator
 {
@@ -240,7 +240,7 @@ struct BuildTypePairAbstractDeclarator
 struct BuildTypePairStructDeclarator
 {
     GnuCAnySpecifierQualifierList *specs;
-    GnuCAnyDeclarator *decl;
+    GnuCTreeDeclarator *decl;
 };
 struct BuildTypePairAbstractStructDeclarator
 {
@@ -257,12 +257,12 @@ GnuCAtomTypedefName *build_typedef_name(Builder *b, const char *id);
 /* raw builders */
 BuildTranslationUnit *build_tu_ast(Builder *b, GnuCAliasTranslationUnit *ast);
 BuildStatement *build_stmt_ast(Builder *b, GnuCOptLabels *labels, GnuCAnyBlockItem *ast);
-BuildStatement *build_decl_ast(Builder *b, GnuCAnyDeclaration *ast);
+BuildStatement *build_decl_ast(Builder *b, GnuCTreeDeclaration *ast);
 BuildStorageClass *build_storage_class_ast(Builder *b, GnuCAnyHeadDeclarationSpecifier *ast);
 BuildParamDeclaration *build_param_ast(Builder *b, GnuCAnyParameterDeclaration *ast);
 BuildMemberDeclaration *build_member_ast(Builder *b, GnuCAnyStructDeclaration *ast);
 BuildEnumerator *build_enum_ast(Builder *b, GnuCAnyEnumerator *ast);
-BuildType *build_type_spec_ast(Builder *b, GnuCAnyTailDeclarationSpecifiers *ds, GnuCAnySpecifierQualifierList *ast);
+BuildType *build_type_spec_ast(Builder *b, GnuCTreeTailDeclarationSpecifiers *ds, GnuCAnySpecifierQualifierList *ast);
 BuildType *build_type_ptr_ast(Builder *b, BuildType *target);
 BuildType *build_type_array_ast(Builder *b, BuildType *element, GnuCAnyArrayDeclarator *size);
 BuildType *build_type_fun_ast(Builder *b, BuildType *target, GnuCAnyParameterTypeList *args);
@@ -279,14 +279,14 @@ BuildTypePairAbstractStructDeclarator build_type_to_decl_struct_abstract(Builder
 
 GnuCAnyBlockItem *build_stmt_to_stmt(Builder *b, BuildStatement *stmt);
 GnuCTreeCompoundStatement *build_stmt_to_compound(Builder *b, BuildStatement *stmt);
-GnuCAnyStatement *build_stmt_to_else_body(Builder *b, BuildStatement *stmt);
+GnuCTreeStatement *build_stmt_to_else_body(Builder *b, BuildStatement *stmt);
 
 GnuCAnyInitializer *build_init_to_init(Builder *b, BuildInitializer *init);
 
 BuildExpression *build_expr_from_primary(Builder *b, GnuCAnyPrimaryExpression *expr);
 BuildExpression *build_expr_from_postfix(Builder *b, GnuCAnyPostfixExpression *expr);
-BuildExpression *build_expr_from_cast(Builder *b, GnuCAnyCastExpression *expr);
-BuildExpression *build_expr_from_unary(Builder *b, GnuCAnyUnaryExpression *expr);
+BuildExpression *build_expr_from_cast(Builder *b, GnuCAnyMaybeCastExpression *expr);
+BuildExpression *build_expr_from_unary(Builder *b, GnuCAnyNoCastExpression *expr);
 BuildExpression *build_expr_from_mul(Builder *b, GnuCAnyMultiplicativeExpression *expr);
 BuildExpression *build_expr_from_add(Builder *b, GnuCAnyAdditiveExpression *expr);
 BuildExpression *build_expr_from_shift(Builder *b, GnuCAnyShiftExpression *expr);
@@ -303,8 +303,8 @@ BuildExpression *build_expr_from_comma(Builder *b, GnuCAnyExprList *expr);
 
 GnuCAnyPrimaryExpression *build_expr_to_primary(Builder *b, BuildExpression *expr);
 GnuCAnyPostfixExpression *build_expr_to_postfix(Builder *b, BuildExpression *expr);
-GnuCAnyCastExpression *build_expr_to_cast(Builder *b, BuildExpression *expr);
-GnuCAnyUnaryExpression *build_expr_to_unary(Builder *b, BuildExpression *expr);
+GnuCAnyMaybeCastExpression *build_expr_to_cast(Builder *b, BuildExpression *expr);
+GnuCAnyNoCastExpression *build_expr_to_unary(Builder *b, BuildExpression *expr);
 GnuCAnyMultiplicativeExpression *build_expr_to_mul(Builder *b, BuildExpression *expr);
 GnuCAnyAdditiveExpression *build_expr_to_add(Builder *b, BuildExpression *expr);
 GnuCAnyShiftExpression *build_expr_to_shift(Builder *b, BuildExpression *expr);

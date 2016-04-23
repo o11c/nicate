@@ -53,7 +53,7 @@ BuildStatement *build_stmt_ast(Builder *b, GnuCOptLabels *labels, GnuCAnyBlockIt
     BuildStatement rv = {labels, ast, NULL};
     return (BuildStatement *)pool_intern(b->pool, &rv, sizeof(rv));
 }
-BuildStatement *build_decl_ast(Builder *b, GnuCAnyDeclaration *ast)
+BuildStatement *build_decl_ast(Builder *b, GnuCTreeDeclaration *ast)
 {
     BuildStatement rv = {NULL, (GnuCAnyBlockItem *)ast, (GnuCAnyExternalDeclaration *)ast};
     return (BuildStatement *)pool_intern(b->pool, &rv, sizeof(rv));
@@ -78,7 +78,7 @@ BuildEnumerator *build_enum_ast(Builder *b, GnuCAnyEnumerator *ast)
     BuildEnumerator rv = {ast};
     return (BuildEnumerator *)pool_intern(b->pool, &rv, sizeof(rv));
 }
-BuildType *build_type_spec_ast(Builder *b, GnuCAnyTailDeclarationSpecifiers *ds, GnuCAnySpecifierQualifierList *sql)
+BuildType *build_type_spec_ast(Builder *b, GnuCTreeTailDeclarationSpecifiers *ds, GnuCAnySpecifierQualifierList *sql)
 {
     BuildType rv;
     rv.type = BTYTY_SPEC;
@@ -136,27 +136,27 @@ static GnuCOptTypeQualifierList *build_tql(Builder *b, struct BuildTypeFlags fla
     GnuCOptTypeQualifierList *rv = (GnuCOptTypeQualifierList *)b->nothing;
     if (flags.is_const)
     {
-        GnuCTreeAnonTypeQualifierListTypeQualifierAttributes *tmp = gnu_c_create_tree_anon_type_qualifier_list_type_qualifier_attributes(b->pool, rv, (GnuCAnyTypeQualifier *)b->kw_const, no_attrs);
+        GnuCTreeTagQListQualifier *tmp = gnu_c_create_tree_tag_q_list_qualifier(b->pool, rv, (GnuCAnyTypeQualifier *)b->kw_const, no_attrs);
         rv = (GnuCOptTypeQualifierList *)tmp;
     }
     if (flags.is_volatile)
     {
-        GnuCTreeAnonTypeQualifierListTypeQualifierAttributes *tmp = gnu_c_create_tree_anon_type_qualifier_list_type_qualifier_attributes(b->pool, rv, (GnuCAnyTypeQualifier *)b->kw_const, no_attrs);
+        GnuCTreeTagQListQualifier *tmp = gnu_c_create_tree_tag_q_list_qualifier(b->pool, rv, (GnuCAnyTypeQualifier *)b->kw_const, no_attrs);
         rv = (GnuCOptTypeQualifierList *)tmp;
     }
     return rv;
 }
-static GnuCAnyTailDeclarationSpecifiers *build_ds(Builder *b, GnuCAnyTailDeclarationSpecifiers *specs, struct BuildTypeFlags flags)
+static GnuCTreeTailDeclarationSpecifiers *build_ds(Builder *b, GnuCTreeTailDeclarationSpecifiers *specs, struct BuildTypeFlags flags)
 {
+    GnuCOptAttributes *no_attrs = (GnuCOptAttributes *)b->nothing;
+    GnuCOptHeadDeclarationSpecifiers *no_head = (GnuCOptHeadDeclarationSpecifiers *)b->nothing;
     if (flags.is_const)
     {
-        GnuCTreeAnonTailDeclarationSpecifiersTailDeclarationSpecifier *tmp = gnu_c_create_tree_anon_tail_declaration_specifiers_tail_declaration_specifier(b->pool, specs, (GnuCAnyTailDeclarationSpecifier *)b->kw_const);
-        specs = (GnuCAnyTailDeclarationSpecifiers *)tmp;
+        specs = gnu_c_create_tree_tail_declaration_specifiers(b->pool, (GnuCOptTailDeclarationSpecifiers *)specs, (GnuCAnyTailDeclarationSpecifier *)b->kw_const, no_attrs, no_head);
     }
     if (flags.is_volatile)
     {
-        GnuCTreeAnonTailDeclarationSpecifiersTailDeclarationSpecifier *tmp = gnu_c_create_tree_anon_tail_declaration_specifiers_tail_declaration_specifier(b->pool, specs, (GnuCAnyTailDeclarationSpecifier *)b->kw_volatile);
-        specs = (GnuCAnyTailDeclarationSpecifiers *)tmp;
+        specs = gnu_c_create_tree_tail_declaration_specifiers(b->pool, (GnuCOptTailDeclarationSpecifiers *)specs, (GnuCAnyTailDeclarationSpecifier *)b->kw_volatile, no_attrs, no_head);
     }
     return specs;
 }
@@ -165,17 +165,17 @@ static GnuCAnySpecifierQualifierList *build_sql(Builder *b, GnuCAnySpecifierQual
     GnuCOptAttributes *no_attrs = (GnuCOptAttributes *)b->nothing;
     if (flags.is_const)
     {
-        GnuCTreeAnonSpecifierQualifierListTypeQualifierAttributes *tmp = gnu_c_create_tree_anon_specifier_qualifier_list_type_qualifier_attributes(b->pool, (GnuCOptSpecifierQualifierList *)specs, (GnuCAnyTypeQualifier *)b->kw_const, no_attrs);
+        GnuCTreeTagSqListQualifier *tmp = gnu_c_create_tree_tag_sq_list_qualifier(b->pool, (GnuCOptSpecifierQualifierList *)specs, (GnuCAnyTypeQualifier *)b->kw_const, no_attrs);
         specs = (GnuCAnySpecifierQualifierList *)tmp;
     }
     if (flags.is_volatile)
     {
-        GnuCTreeAnonSpecifierQualifierListTypeQualifierAttributes *tmp = gnu_c_create_tree_anon_specifier_qualifier_list_type_qualifier_attributes(b->pool, (GnuCOptSpecifierQualifierList *)specs, (GnuCAnyTypeQualifier *)b->kw_volatile, no_attrs);
+        GnuCTreeTagSqListQualifier *tmp = gnu_c_create_tree_tag_sq_list_qualifier(b->pool, (GnuCOptSpecifierQualifierList *)specs, (GnuCAnyTypeQualifier *)b->kw_volatile, no_attrs);
         specs = (GnuCAnySpecifierQualifierList *)tmp;
     }
     return specs;
 }
-static GnuCAnyDirectDeclarator *build_decl_direct(Builder *b, GnuCAnyDeclarator *decl)
+static GnuCAnyDirectDeclarator *build_decl_direct(Builder *b, GnuCTreeDeclarator *decl)
 {
     if (gnu_c_is_any_direct_declarator((GnuCAst *)decl))
     {
@@ -184,21 +184,20 @@ static GnuCAnyDirectDeclarator *build_decl_direct(Builder *b, GnuCAnyDeclarator 
     else
     {
         GnuCOptAttributes *no_attrs = (GnuCOptAttributes *)b->nothing;
-        GnuCTreeAnonLparenAttributesDeclaratorRparen *pd = gnu_c_create_tree_anon_lparen_attributes_declarator_rparen(b->pool, b->lparen, no_attrs, decl, b->rparen);
+        GnuCTreeTagParenDirectDeclarator *pd = gnu_c_create_tree_tag_paren_direct_declarator(b->pool, b->lparen, no_attrs, decl, b->rparen);
         return (GnuCAnyDirectDeclarator *)pd;
     }
 }
-static GnuCAnyDeclarator *build_ptr(Builder *b, GnuCAnyDeclarator *decl, struct BuildTypeFlags flags)
+static GnuCTreeDeclarator *build_ptr(Builder *b, GnuCTreeDeclarator *decl, struct BuildTypeFlags flags)
 {
-    GnuCTreeAnonStarTypeQualifierList *ptr = gnu_c_create_tree_anon_star_type_qualifier_list(b->pool, b->star, build_tql(b, flags));
-    GnuCAnyPointer *pointer = (GnuCAnyPointer *)ptr;
+    GnuCTreePointer *pointer = gnu_c_create_tree_pointer(b->pool, b->star, (GnuCOptTypeQualifierList *)build_tql(b, flags), (GnuCOptPointer *)b->nothing);
     GnuCAnyDirectDeclarator *ddecl = build_decl_direct(b, decl);
-    GnuCTreeAnonPointerDirectDeclarator *rv = gnu_c_create_tree_anon_pointer_direct_declarator(b->pool, pointer, ddecl);
-    decl = (GnuCAnyDeclarator *)rv;
+    GnuCTreeDeclarator *rv = gnu_c_create_tree_declarator(b->pool, (GnuCOptPointer *)pointer, ddecl);
+    decl = (GnuCTreeDeclarator *)rv;
     return decl;
 }
 
-static BuildTypePairDeclarator build_type_to_decl_step(Builder *b, BuildType *type, GnuCAnyDeclarator *decl)
+static BuildTypePairDeclarator build_type_to_decl_step(Builder *b, BuildType *type, GnuCTreeDeclarator *decl)
 {
     switch (type->type)
     {
@@ -218,8 +217,8 @@ static BuildTypePairDeclarator build_type_to_decl_step(Builder *b, BuildType *ty
     case BTYTY_ARRAY:
         {
             GnuCAnyDirectDeclarator *ddecl = build_decl_direct(b, decl);
-            GnuCTreeAnonDirectDeclaratorArrayDeclarator *adecl = gnu_c_create_tree_anon_direct_declarator_array_declarator(b->pool, ddecl, type->array.size);
-            decl = (GnuCAnyDeclarator *)adecl;
+            GnuCTreeTagArrayDirectDeclarator *adecl = gnu_c_create_tree_tag_array_direct_declarator(b->pool, ddecl, type->array.size);
+            decl = (GnuCTreeDeclarator *)adecl;
             assert (!type->flags.is_const && !type->flags.is_volatile);
             type = type->array.element;
             return build_type_to_decl_step(b, type, decl);
@@ -227,8 +226,8 @@ static BuildTypePairDeclarator build_type_to_decl_step(Builder *b, BuildType *ty
     case BTYTY_FUN:
         {
             GnuCAnyDirectDeclarator *ddecl = build_decl_direct(b, decl);
-            GnuCTreeAnonDirectDeclaratorLparenParameterTypeListRparen *fdecl = gnu_c_create_tree_anon_direct_declarator_lparen_parameter_type_list_rparen(b->pool, ddecl, b->lparen, type->fun.args, b->rparen);
-            decl = (GnuCAnyDeclarator *)fdecl;
+            GnuCTreeTagFunDirectDeclarator *fdecl = gnu_c_create_tree_tag_fun_direct_declarator(b->pool, ddecl, b->lparen, type->fun.args, b->rparen);
+            decl = (GnuCTreeDeclarator *)fdecl;
             assert (!type->flags.is_const && !type->flags.is_volatile);
             type = type->fun.ret;
             return build_type_to_decl_step(b, type, decl);
@@ -237,7 +236,7 @@ static BuildTypePairDeclarator build_type_to_decl_step(Builder *b, BuildType *ty
         abort();
     }
 }
-static BuildTypePairStructDeclarator build_type_to_decl_struct_step(Builder *b, BuildType *type, GnuCAnyDeclarator *decl)
+static BuildTypePairStructDeclarator build_type_to_decl_struct_step(Builder *b, BuildType *type, GnuCTreeDeclarator *decl)
 {
     switch (type->type)
     {
@@ -257,8 +256,8 @@ static BuildTypePairStructDeclarator build_type_to_decl_struct_step(Builder *b, 
     case BTYTY_ARRAY:
         {
             GnuCAnyDirectDeclarator *ddecl = build_decl_direct(b, decl);
-            GnuCTreeAnonDirectDeclaratorArrayDeclarator *adecl = gnu_c_create_tree_anon_direct_declarator_array_declarator(b->pool, ddecl, type->array.size);
-            decl = (GnuCAnyDeclarator *)adecl;
+            GnuCTreeTagArrayDirectDeclarator *adecl = gnu_c_create_tree_tag_array_direct_declarator(b->pool, ddecl, type->array.size);
+            decl = (GnuCTreeDeclarator *)adecl;
             assert (!type->flags.is_const && !type->flags.is_volatile);
             type = type->array.element;
             return build_type_to_decl_struct_step(b, type, decl);
@@ -266,8 +265,8 @@ static BuildTypePairStructDeclarator build_type_to_decl_struct_step(Builder *b, 
     case BTYTY_FUN:
         {
             GnuCAnyDirectDeclarator *ddecl = build_decl_direct(b, decl);
-            GnuCTreeAnonDirectDeclaratorLparenParameterTypeListRparen *fdecl = gnu_c_create_tree_anon_direct_declarator_lparen_parameter_type_list_rparen(b->pool, ddecl, b->lparen, type->fun.args, b->rparen);
-            decl = (GnuCAnyDeclarator *)fdecl;
+            GnuCTreeTagFunDirectDeclarator *fdecl = gnu_c_create_tree_tag_fun_direct_declarator(b->pool, ddecl, b->lparen, type->fun.args, b->rparen);
+            decl = (GnuCTreeDeclarator *)fdecl;
             assert (!type->flags.is_const && !type->flags.is_volatile);
             type = type->fun.ret;
             return build_type_to_decl_struct_step(b, type, decl);
@@ -287,7 +286,7 @@ static GnuCOptDirectAbstractDeclarator *build_opt_abstract_decl_direct(Builder *
     {
         GnuCOptAttributes *no_attrs = (GnuCOptAttributes *)b->nothing;
         GnuCAnyAbstractDeclarator *some_decl = (GnuCAnyAbstractDeclarator *)decl;
-        GnuCTreeAnonLparenAttributesAbstractDeclaratorRparen *pad = gnu_c_create_tree_anon_lparen_attributes_abstract_declarator_rparen(b->pool, b->lparen, no_attrs, some_decl, b->rparen);
+        GnuCTreeTagParenDirectAbstractDeclarator *pad = gnu_c_create_tree_tag_paren_direct_abstract_declarator(b->pool, b->lparen, no_attrs, some_decl, b->rparen);
         return (GnuCOptDirectAbstractDeclarator *)pad;
     }
 }
@@ -307,13 +306,13 @@ static BuildTypePairAbstractDeclarator build_type_to_abstract_decl_step(Builder 
             GnuCOptDirectAbstractDeclarator *ddecl = build_opt_abstract_decl_direct(b, decl);
             if (gnu_c_is_nothing((GnuCAst *)ddecl))
             {
-                GnuCTreeAnonStarTypeQualifierList *pointer = gnu_c_create_tree_anon_star_type_qualifier_list(b->pool, b->star, build_tql(b, type->flags));
+                GnuCTreePointer *pointer = gnu_c_create_tree_pointer(b->pool, b->star, build_tql(b, type->flags), (GnuCOptPointer *)b->nothing);
                 decl = (GnuCOptAbstractDeclarator *)pointer;
             }
             else
             {
-                GnuCTreeAnonStarTypeQualifierList *pointer = gnu_c_create_tree_anon_star_type_qualifier_list(b->pool, b->star, build_tql(b, type->flags));
-                GnuCTreeAnonPointerDirectAbstractDeclarator *pdecl = gnu_c_create_tree_anon_pointer_direct_abstract_declarator(b->pool, (GnuCAnyPointer *)pointer, (GnuCAnyDirectAbstractDeclarator *)ddecl);
+                GnuCTreePointer *pointer = gnu_c_create_tree_pointer(b->pool, b->star, build_tql(b, type->flags), (GnuCOptPointer *)b->nothing);
+                GnuCTreeTagPointerAbstractDeclarator *pdecl = gnu_c_create_tree_tag_pointer_abstract_declarator(b->pool, (GnuCTreePointer *)pointer, (GnuCOptDirectAbstractDeclarator *)ddecl);
                 decl = (GnuCOptAbstractDeclarator *)pdecl;
             }
             type = type->ptr.element;
@@ -322,7 +321,7 @@ static BuildTypePairAbstractDeclarator build_type_to_abstract_decl_step(Builder 
     case BTYTY_ARRAY:
         {
             GnuCOptDirectAbstractDeclarator *odadecl = build_opt_abstract_decl_direct(b, decl);
-            GnuCTreeAnonDirectAbstractDeclaratorArrayDeclarator *adecl = gnu_c_create_tree_anon_direct_abstract_declarator_array_declarator(b->pool, odadecl, type->array.size);
+            GnuCTreeTagArrayDirectAbstractDeclarator *adecl = gnu_c_create_tree_tag_array_direct_abstract_declarator(b->pool, odadecl, type->array.size);
             decl = (GnuCOptAbstractDeclarator *)adecl;
             assert (!type->flags.is_const && !type->flags.is_volatile);
             type = type->array.element;
@@ -331,7 +330,7 @@ static BuildTypePairAbstractDeclarator build_type_to_abstract_decl_step(Builder 
     case BTYTY_FUN:
         {
             GnuCOptDirectAbstractDeclarator *odadecl = build_opt_abstract_decl_direct(b, decl);
-            GnuCTreeAnonDirectAbstractDeclaratorLparenParameterTypeListRparen *fdecl = gnu_c_create_tree_anon_direct_abstract_declarator_lparen_parameter_type_list_rparen(b->pool, odadecl, b->lparen, (GnuCOptParameterTypeList *)type->fun.args, b->rparen);
+            GnuCTreeTagFunDirectAbstractDeclarator *fdecl = gnu_c_create_tree_tag_fun_direct_abstract_declarator(b->pool, odadecl, b->lparen, (GnuCOptParameterTypeList *)type->fun.args, b->rparen);
             decl = (GnuCOptAbstractDeclarator *)fdecl;
             assert (!type->flags.is_const && !type->flags.is_volatile);
             type = type->fun.ret;
@@ -357,13 +356,13 @@ static BuildTypePairAbstractStructDeclarator build_type_to_abstract_decl_struct_
             GnuCOptDirectAbstractDeclarator *ddecl = build_opt_abstract_decl_direct(b, decl);
             if (gnu_c_is_nothing((GnuCAst *)ddecl))
             {
-                GnuCTreeAnonStarTypeQualifierList *pointer = gnu_c_create_tree_anon_star_type_qualifier_list(b->pool, b->star, build_tql(b, type->flags));
+                GnuCTreePointer *pointer = gnu_c_create_tree_pointer(b->pool, b->star, build_tql(b, type->flags), (GnuCOptPointer *)b->nothing);
                 decl = (GnuCOptAbstractDeclarator *)pointer;
             }
             else
             {
-                GnuCTreeAnonStarTypeQualifierList *pointer = gnu_c_create_tree_anon_star_type_qualifier_list(b->pool, b->star, build_tql(b, type->flags));
-                GnuCTreeAnonPointerDirectAbstractDeclarator *pdecl = gnu_c_create_tree_anon_pointer_direct_abstract_declarator(b->pool, (GnuCAnyPointer *)pointer, (GnuCAnyDirectAbstractDeclarator *)ddecl);
+                GnuCTreePointer *pointer = gnu_c_create_tree_pointer(b->pool, b->star, build_tql(b, type->flags), (GnuCOptPointer *)b->nothing);
+                GnuCTreeTagPointerAbstractDeclarator *pdecl = gnu_c_create_tree_tag_pointer_abstract_declarator(b->pool, (GnuCTreePointer *)pointer, (GnuCOptDirectAbstractDeclarator *)ddecl);
                 decl = (GnuCOptAbstractDeclarator *)pdecl;
             }
             type = type->ptr.element;
@@ -372,7 +371,7 @@ static BuildTypePairAbstractStructDeclarator build_type_to_abstract_decl_struct_
     case BTYTY_ARRAY:
         {
             GnuCOptDirectAbstractDeclarator *odadecl = build_opt_abstract_decl_direct(b, decl);
-            GnuCTreeAnonDirectAbstractDeclaratorArrayDeclarator *adecl = gnu_c_create_tree_anon_direct_abstract_declarator_array_declarator(b->pool, odadecl, type->array.size);
+            GnuCTreeTagArrayDirectAbstractDeclarator *adecl = gnu_c_create_tree_tag_array_direct_abstract_declarator(b->pool, odadecl, type->array.size);
             decl = (GnuCOptAbstractDeclarator *)adecl;
             assert (!type->flags.is_const && !type->flags.is_volatile);
             type = type->array.element;
@@ -381,7 +380,7 @@ static BuildTypePairAbstractStructDeclarator build_type_to_abstract_decl_struct_
     case BTYTY_FUN:
         {
             GnuCOptDirectAbstractDeclarator *odadecl = build_opt_abstract_decl_direct(b, decl);
-            GnuCTreeAnonDirectAbstractDeclaratorLparenParameterTypeListRparen *fdecl = gnu_c_create_tree_anon_direct_abstract_declarator_lparen_parameter_type_list_rparen(b->pool, odadecl, b->lparen, (GnuCOptParameterTypeList *)type->fun.args, b->rparen);
+            GnuCTreeTagFunDirectAbstractDeclarator *fdecl = gnu_c_create_tree_tag_fun_direct_abstract_declarator(b->pool, odadecl, b->lparen, (GnuCOptParameterTypeList *)type->fun.args, b->rparen);
             decl = (GnuCOptAbstractDeclarator *)fdecl;
             assert (!type->flags.is_const && !type->flags.is_volatile);
             type = type->fun.ret;
@@ -405,12 +404,12 @@ static GnuCAnyDeclarationSpecifiers *head_specs(Builder *b, size_t nscs, BuildSt
         hspecs = (GnuCOptHeadDeclarationSpecifiers *)gnu_c_create_tree_head_declaration_specifiers(b->pool, hspecs, scs[0]->ast_scs, no_attrs);
         scs++;
     }
-    return (GnuCAnyDeclarationSpecifiers *)gnu_c_create_tree_anon_head_declaration_specifiers_or_attributes_tail_declaration_specifiers(b->pool, (GnuCAnyHeadDeclarationSpecifiersOrAttributes *)hspecs, (GnuCAnyTailDeclarationSpecifiers *)tspecs);
+    return (GnuCAnyDeclarationSpecifiers *)gnu_c_create_tree_tag_head_tail_declaration_specifiers(b->pool, no_attrs, (GnuCOptHeadDeclarationSpecifiers *)hspecs, (GnuCTreeTailDeclarationSpecifiers *)tspecs);
 }
 BuildTypePairDeclarator build_type_to_decl(Builder *b, size_t nscs, BuildStorageClass **scs, BuildType *type, const char *name)
 {
     GnuCAtomIdentifier *id = build_id(b, name);
-    GnuCAnyDeclarator *decl = (GnuCAnyDeclarator *)id;
+    GnuCTreeDeclarator *decl = (GnuCTreeDeclarator *)id;
     BuildTypePairDeclarator rv = build_type_to_decl_step(b, type, decl);
     rv.specs = head_specs(b, nscs, scs, rv.specs);
     return rv;
@@ -427,7 +426,7 @@ BuildTypePairAbstractDeclarator build_type_to_decl_abstract(Builder *b, size_t n
 BuildTypePairStructDeclarator build_type_to_decl_struct(Builder *b, BuildType *type, const char *name)
 {
     GnuCAtomIdentifier *id = build_id(b, name);
-    GnuCAnyDeclarator *decl = (GnuCAnyDeclarator *)id;
+    GnuCTreeDeclarator *decl = (GnuCTreeDeclarator *)id;
     return build_type_to_decl_struct_step(b, type, decl);
 }
 BuildTypePairAbstractStructDeclarator build_type_to_decl_struct_abstract(Builder *b, BuildType *type)
@@ -438,24 +437,21 @@ BuildTypePairAbstractStructDeclarator build_type_to_decl_struct_abstract(Builder
 
 GnuCAnyBlockItem *build_stmt_to_stmt(Builder *b, BuildStatement *stmt)
 {
+    GnuCTreeStatement *rv;
     assert (stmt->ast_ext == NULL);
     assert (stmt->ast_labels != NULL);
     assert (stmt->ast_unlabeled != NULL);
-    assert (gnu_c_is_any_statement((GnuCAst *)stmt->ast_unlabeled));
-    if (stmt->ast_labels != (GnuCOptLabels *)b->nothing)
-    {
-        GnuCTreeAnonLabelsUnlabeledStatement *rv = gnu_c_create_tree_anon_labels_unlabeled_statement(b->pool, (GnuCTreeLabels *)stmt->ast_labels, (GnuCAnyUnlabeledStatement *)stmt->ast_unlabeled);
-        return (GnuCAnyBlockItem *)rv;
-    }
-    return (GnuCAnyBlockItem *)stmt->ast_unlabeled;
+    assert (gnu_c_is_tree_statement((GnuCAst *)stmt->ast_unlabeled));
+    rv = gnu_c_create_tree_statement(b->pool, stmt->ast_labels, (GnuCAnyUnlabeledStatement *)stmt->ast_unlabeled);
+    return (GnuCAnyBlockItem *)rv;
 }
 GnuCTreeCompoundStatement *build_stmt_to_compound(Builder *b, BuildStatement *stmt)
 {
     assert (stmt->ast_ext == NULL);
     assert (stmt->ast_labels != NULL);
     assert (stmt->ast_unlabeled != NULL);
-    assert (gnu_c_is_any_statement((GnuCAst *)stmt->ast_unlabeled));
-    if (stmt->ast_labels == (GnuCOptLabels *)b->nothing)
+    assert (gnu_c_is_tree_statement((GnuCAst *)stmt->ast_unlabeled));
+    if (gnu_c_is_nothing((GnuCAst *)stmt->ast_labels))
     {
         if (gnu_c_is_tree_compound_statement((GnuCAst *)stmt->ast_unlabeled))
         {
@@ -469,14 +465,14 @@ GnuCTreeCompoundStatement *build_stmt_to_compound(Builder *b, BuildStatement *st
         return gnu_c_create_tree_compound_statement(b->pool, b->lbrace, no_labels, stmts, b->rbrace);
     }
 }
-GnuCAnyStatement *build_stmt_to_else_body(Builder *b, BuildStatement *stmt)
+GnuCTreeStatement *build_stmt_to_else_body(Builder *b, BuildStatement *stmt)
 {
-    GnuCAnyStatement *ast_stmt = (GnuCAnyStatement *)stmt->ast_unlabeled;
+    GnuCTreeStatement *ast_stmt = (GnuCTreeStatement *)stmt->ast_unlabeled;
     GnuCAst *ast = (GnuCAst *)ast_stmt;
     assert (stmt->ast_ext == NULL);
     assert (stmt->ast_labels != NULL);
     assert (stmt->ast_unlabeled != NULL);
-    if (stmt->ast_labels == (GnuCOptLabels *)b->nothing)
+    if (gnu_c_is_nothing((GnuCAst *)stmt->ast_labels))
     {
         if (gnu_c_is_tree_if_statement(ast))
         {
@@ -487,7 +483,7 @@ GnuCAnyStatement *build_stmt_to_else_body(Builder *b, BuildStatement *stmt)
             return ast_stmt;
         }
     }
-    return (GnuCAnyStatement *)build_stmt_to_compound(b, stmt);
+    return (GnuCTreeStatement *)build_stmt_to_compound(b, stmt);
 }
 
 GnuCAnyInitializer *build_init_to_init(Builder *b, BuildInitializer *init)
@@ -507,14 +503,14 @@ BuildExpression *build_expr_from_postfix(Builder *b, GnuCAnyPostfixExpression *e
     assert (gnu_c_is_any_postfix_expression((GnuCAst *)expr));
     return build_expr_ast(b, (GnuCAnyExprList *)expr);
 }
-BuildExpression *build_expr_from_cast(Builder *b, GnuCAnyCastExpression *expr)
+BuildExpression *build_expr_from_cast(Builder *b, GnuCAnyMaybeCastExpression *expr)
 {
-    assert (gnu_c_is_any_cast_expression((GnuCAst *)expr));
+    assert (gnu_c_is_any_maybe_cast_expression((GnuCAst *)expr));
     return build_expr_ast(b, (GnuCAnyExprList *)expr);
 }
-BuildExpression *build_expr_from_unary(Builder *b, GnuCAnyUnaryExpression *expr)
+BuildExpression *build_expr_from_unary(Builder *b, GnuCAnyNoCastExpression *expr)
 {
-    assert (gnu_c_is_any_unary_expression((GnuCAst *)expr));
+    assert (gnu_c_is_any_no_cast_expression((GnuCAst *)expr));
     return build_expr_ast(b, (GnuCAnyExprList *)expr);
 }
 BuildExpression *build_expr_from_mul(Builder *b, GnuCAnyMultiplicativeExpression *expr)
@@ -583,10 +579,10 @@ BuildExpression *build_expr_from_comma(Builder *b, GnuCAnyExprList *expr)
     return build_expr_ast(b, (GnuCAnyExprList *)expr);
 }
 
-static GnuCTreeAnonLparenExprListRparen *gnu_c_expr_parenthesize(Builder *b, BuildExpression *expr)
+static GnuCTreeTagParenExpression *gnu_c_expr_parenthesize(Builder *b, BuildExpression *expr)
 {
     GnuCAnyExprList *comma = build_expr_to_comma(b, expr);
-    return gnu_c_create_tree_anon_lparen_expr_list_rparen(b->pool, b->lparen, comma, b->rparen);
+    return gnu_c_create_tree_tag_paren_expression(b->pool, b->lparen, comma, b->rparen);
 }
 GnuCAnyPrimaryExpression *build_expr_to_primary(Builder *b, BuildExpression *expr)
 {
@@ -600,17 +596,17 @@ GnuCAnyPostfixExpression *build_expr_to_postfix(Builder *b, BuildExpression *exp
         return (GnuCAnyPostfixExpression *)expr->ast_expr;
     return (GnuCAnyPostfixExpression *)gnu_c_expr_parenthesize(b, expr);
 }
-GnuCAnyCastExpression *build_expr_to_cast(Builder *b, BuildExpression *expr)
+GnuCAnyMaybeCastExpression *build_expr_to_cast(Builder *b, BuildExpression *expr)
 {
-    if (gnu_c_is_any_cast_expression((GnuCAst *)expr->ast_expr))
-        return (GnuCAnyCastExpression *)expr->ast_expr;
-    return (GnuCAnyCastExpression *)gnu_c_expr_parenthesize(b, expr);
+    if (gnu_c_is_any_maybe_cast_expression((GnuCAst *)expr->ast_expr))
+        return (GnuCAnyMaybeCastExpression *)expr->ast_expr;
+    return (GnuCAnyMaybeCastExpression *)gnu_c_expr_parenthesize(b, expr);
 }
-GnuCAnyUnaryExpression *build_expr_to_unary(Builder *b, BuildExpression *expr)
+GnuCAnyNoCastExpression *build_expr_to_unary(Builder *b, BuildExpression *expr)
 {
-    if (gnu_c_is_any_unary_expression((GnuCAst *)expr->ast_expr))
-        return (GnuCAnyUnaryExpression *)expr->ast_expr;
-    return (GnuCAnyUnaryExpression *)gnu_c_expr_parenthesize(b, expr);
+    if (gnu_c_is_any_no_cast_expression((GnuCAst *)expr->ast_expr))
+        return (GnuCAnyNoCastExpression *)expr->ast_expr;
+    return (GnuCAnyNoCastExpression *)gnu_c_expr_parenthesize(b, expr);
 }
 GnuCAnyMultiplicativeExpression *build_expr_to_mul(Builder *b, BuildExpression *expr)
 {
