@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #   Copyright © 2015-2016 Ben Longbons
 #
 #   This file is part of Nicate.

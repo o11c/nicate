@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #   Copyright © 2015-2016 Ben Longbons
 #
 #   This file is part of Nicate.
@@ -16,7 +15,7 @@
 #   You should have received a copy of the GNU Lesser General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import nicate
+import nicate.core as nicate
 
 
 def do_match(pat, txt):

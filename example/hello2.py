@@ -18,7 +18,7 @@
 
 import sys
 
-import nicate
+import nicate.core as nicate
 
 
 def main():

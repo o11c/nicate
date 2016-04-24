@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #   Copyright © 2015 Ben Longbons
 #
 #   This file is part of Nicate.
@@ -16,11 +15,9 @@
 #   You should have received a copy of the GNU Lesser General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import gc
-
 import pytest
 
-import nicate
+import nicate.core as nicate
 
 
 @pytest.fixture
@@ -675,8 +672,3 @@ def test_expr_rest(builder):
     assert tu.emit_to_string() == pat('a, b, c;')
     tu = ef(b, b.expr_comma(xa, b.expr_comma(xb, xc)))
     assert tu.emit_to_string() == pat('a, (b, c);')
-
-
-if __name__ == '__main__':
-    print('Note: assert rewriting may be slow the first time.')
-    __import__('sys').exit(pytest.main())

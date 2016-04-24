@@ -18,8 +18,8 @@
 import glob
 import pytest
 
-import grammar
-import nicate
+from nicate import grammar
+import nicate.core as nicate
 
 @pytest.fixture(params=glob.glob('gram/*.gram'))
 def gram(request):

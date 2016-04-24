@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #   Copyright © 2015 Ben Longbons
 #
 #   This file is part of Nicate.
@@ -16,8 +15,8 @@
 #   You should have received a copy of the GNU Lesser General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import nicate
-from nicate import SHIFT, GOTO, REDUCE, ERROR, ACCEPT
+import nicate.core as nicate
+from nicate.core import SHIFT, GOTO, REDUCE, ERROR, ACCEPT
 
 
 def example1():

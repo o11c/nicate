@@ -1,4 +1,4 @@
-#   Copyright © 2015 Ben Longbons
+#   Copyright © 2015-2016 Ben Longbons
 #
 #   This file is part of Nicate.
 #
@@ -18,7 +18,7 @@
 import cffi
 from collections import namedtuple
 
-import grammar
+from . import grammar
 
 
 def u2b(u):
@@ -455,9 +455,10 @@ class Parser:
         print('%s: creating automaton ...' % grammar.language.dash)
         self._py_automaton = Automaton(lower_grammar(grammar))
 
-        self._classes = self.build_classes(grammar)
+        self._classes = self._build_classes(grammar)
 
-    def build_classes(self, g):
+    def _build_classes(self, g):
+        # TODO figure out what to do e.g. for mixins?
         rv = {}
         class Tree:
             __slots__ = ()

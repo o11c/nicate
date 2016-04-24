@@ -4,5 +4,6 @@ obj/*.o
 bin/*.x
 obj/*.d
 gen/*.gen.*
-/__pycache__/
-/.cache/
+nicate/__pycache__/
+nicate/tests/__pycache__/
+nicate/.cache/

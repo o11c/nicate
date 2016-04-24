@@ -15,6 +15,8 @@
 #   You should have received a copy of the GNU Lesser General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+PYTHON = python3
+
 CC = gcc -fsanitize=address,undefined
 # Oldest locally tested version.
 # CC = gcc-4.2
@@ -70,7 +72,10 @@ override CFLAGS += -MMD -MP
 override CFLAGS += -fPIC
 override CPPFLAGS += -I src/ -I gen/
 
-export LD_LIBRARY_PATH:=.:${LD_LIBRARY_PATH}
+override PWD := $(shell pwd)
+
+export LD_LIBRARY_PATH:=${PWD}:${LD_LIBRARY_PATH}
+export PYTHONPATH:=${PWD}:${PYTHONPATH}
 ifeq '${USING_ASAN}' 'yes'
 ifeq '${USING_CLANG}' 'yes'
 override CC += -shared-libasan
@@ -90,14 +95,16 @@ endif
 .DELETE_ON_ERROR:
 
 default: hello.gen.run hello2.gen.run obj/gnu-c.gen.o obj/nicate-glass.gen.o
-test: lib/libnicate.so
-	${TEST_WRAPPER} ./test_nicate.py ${PYTEST_ARGS}
+test: test-py
+test-py: lib/libnicate.so
+	@echo Note: assert rewriting may be slow the first time.
+	${TEST_WRAPPER} ${PYTHON} -m pytest nicate/ ${PYTEST_ARGS}
 
 bin/hello.x: obj/hello.o lib/libnicate.so
 lib/libnicate.so: $(addprefix obj/,${LIB_OBJECTS})
 # force order
 obj/bridge.o obj/builder.o: gen/gnu-c.gen.h
-gen/hello2.gen.c: lib/libnicate.so nicate.py
+gen/hello2.gen.c: lib/libnicate.so nicate/*.py
 
 lib/lib%.so: obj/%.o
 	$(MKDIR_FIRST)
@@ -111,10 +118,13 @@ obj/%.o: src/%.c
 obj/%.o: gen/%.c
 	$(MKDIR_FIRST)
 	${CC} ${CPPFLAGS} ${CFLAGS} -c -o $@ $<
-gen/%.gen.c gen/%.gen.h: gram/%.gram grammar.py
+obj/%.o: example/%.c
 	$(MKDIR_FIRST)
-	./grammar.py $< gen/$*.gen.c gen/$*.gen.h
-gen/%.gen.c: %.py
+	${CC} ${CPPFLAGS} ${CFLAGS} -c -o $@ $<
+gen/%.gen.c gen/%.gen.h: gram/%.gram nicate/*.py
+	$(MKDIR_FIRST)
+	${PYTHON} -m nicate.grammar $< gen/$*.gen.c gen/$*.gen.h
+gen/%.gen.c: example/%.py
 	$(MKDIR_FIRST)
 	./$< > $@
 gen/%.gen.c: bin/%.x
@@ -125,11 +135,11 @@ gen/%.gen.c: bin/%.x
 
 # For debugging - enter the ASAN environment appropriately.
 exec-%:
-	+$* || true
+	-+$*
 
 clean:
 	rm -rf bin/ obj/ lib/
-	rm -rf gen/
 distclean: clean
+	rm -rf gen/
 
 -include obj/*.d

@@ -1,4 +1,4 @@
-from test_nicate import builder, pat, ef
+from nicate.tests.test_nicate import builder, pat, ef
 
 
 def test_expr_harder(builder):
