@@ -329,12 +329,12 @@ static size_t get_goto(State *state, size_t sym)
     return state->gotos[sym - state->first_nonterm];
 }
 
-static Tree make_tree(size_t sym, Tree *trees, size_t num_trees)
+static Tree make_tree(size_t sym, Tree *trees, size_t num_trees, size_t rule)
 {
     Tree rv;
     rv.type = sym;
     rv.num_children = num_trees;
-    rv.xxx_total_tokens_or_maybe_total_token_length_or_maybe_even_rule = 0;
+    rv.rule = rule;
     rv.children = (Tree *)memdup(trees, num_trees * sizeof(*trees));
     return rv;
 }
@@ -372,7 +372,7 @@ bool automaton_feed_term(Automaton *a, size_t sym, const char *str, size_t len)
             size_t count = rule->num_rhses;
             size_t new_size = a->stacks_size - count;
             Tree *trees = a->tree_stack + new_size;
-            Tree new_tree = make_tree(lhs, trees, count);
+            Tree new_tree = make_tree(lhs, trees, count, rule_no);
             size_t old_new_top = a->state_stack[new_size];
             size_t new_new_top = get_goto(&a->states[old_new_top], lhs);
             assert (new_new_top != 0);

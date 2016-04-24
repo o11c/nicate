@@ -123,6 +123,10 @@ gen/%.gen.c: bin/%.x
 %.run: bin/%.x
 	./$<
 
+# For debugging - enter the ASAN environment appropriately.
+exec-%:
+	+$* || true
+
 clean:
 	rm -rf bin/ obj/ lib/
 	rm -rf gen/

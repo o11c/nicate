@@ -55,7 +55,7 @@ struct Tree
         */
         __extension__ struct
         {
-            size_t xxx_total_tokens_or_maybe_total_token_length_or_maybe_even_rule;
+            size_t rule;
             Tree *children;
         };
     };

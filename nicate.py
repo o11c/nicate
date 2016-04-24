@@ -257,9 +257,9 @@ class Tokenizer:
         return (self._py_lexicon.name(i), s)
 
 class Grammar:
-    __slots__ = ('_names', '_indices', '_num_terminals', '_num_nonterminals', '_c_grammar')
+    __slots__ = ('_names', '_indices', '_num_terminals', '_num_nonterminals', '_c_grammar', '_derivs')
 
-    def __init__(self, terminals, nonterminals, rules):
+    def __init__(self, terminals, nonterminals, rules, *, derivs=None):
         terminals = list(terminals)
         nonterminals = list(nonterminals)
         rules = [(l, [i for i in r]) for (l, r) in rules]
@@ -268,6 +268,7 @@ class Grammar:
         assert len(terminals) == len(terminal_set)
         assert len(nonterminals) == len(nonterminal_set)
         assert not (terminal_set & nonterminal_set)
+        self._derivs = derivs or [(None, [])] * len(rules)
 
         idx_to_names = self._names = []
         names_to_idx = self._indices = {}
@@ -329,33 +330,33 @@ class Automaton:
         rv = nicate_library.automaton_feed_term(a, sym, data, len(data))
         return bool(rv)
 
-    def dump_trees(self):
+    def get(self, classes):
         trees = nicate_library.automaton_result(self._c_automaton)
         tree_count = nicate_library.automaton_tree_count(self._c_automaton)
-        _dump_trees(0, self._py_grammar, trees, tree_count)
+        assert (tree_count == 2)
+        return self._get(trees + 0, classes)
 
-def _dump_line(level, *args):
-    print('  ' * level, *args, sep='')
+    def _get(self, tree, classes):
+        while tree.num_children == 1:
+            tree = tree.children
+        if not tree.num_children:
+            type_name = self._py_grammar._names[tree.type]
+            data = nicate_ffi.buffer(tree.token, tree.token_length)[:]
+            return classes[type_name](data)
+        else:
+            type_name, deriv = self._py_grammar._derivs[tree.rule]
+            d = 0
+            j = 0
+            args = [None] * (tree.num_children + len(deriv))
+            for i in range(len(args)):
+                if d < len(deriv) and i == deriv[d]:
+                    args[i] = classes['nothing']()
+                    d += 1
+                else:
+                    args[i] = self._get(tree.children + j, classes)
+                    j += 1
+            return classes[type_name](args)
 
-def _dump_tree(level, grammar, ptr):
-    type_name = grammar._names[ptr.type]
-    while ptr.num_children == 1:
-        ptr = ptr.children
-        type_name += ' -> ' + grammar._names[ptr.type]
-    _dump_line(level, 'type: ', type_name)
-    if ptr.num_children:
-        _dump_line(level, 'children:')
-        _dump_trees(level + 1, grammar, ptr.children, ptr.num_children)
-    else:
-        _dump_line(level, 'token: ', repr(nicate_ffi.buffer(ptr.token, ptr.token_length)[:]))
-
-def _dump_trees(level, grammar, base, size):
-    _dump_line(level, '[')
-    for i in range(size):
-        if i:
-            _dump_line(level, ',')
-        _dump_tree(level + 1, grammar, base + i)
-    _dump_line(level, ']')
 
 def SHIFT(s):
     return (nicate_library.SHIFT, s)
@@ -375,7 +376,7 @@ def lower_grammar(gram):
     Other than rearranging everything, the important thing here is the
     removal of all `_opt` rules.
 
-    We also inline all `anon-` rules and aliases.
+    We also inline all `anon-` and `tag-` rules and aliases.
     '''
 
     terminals = ['$end']
@@ -386,26 +387,29 @@ def lower_grammar(gram):
     if isinstance(start, grammar.Option):
         start = start.child
     rules = [('$accept', [start.tag.dash, '$end'])]
+    derivs = [('$accept', [])]
 
-    def add_rule(lhs, rhses):
+    def add_rule(lhs, rhses, name, deriv):
         assert isinstance(lhs, grammar.IdentifierCase)
         assert all(isinstance(rhs, grammar.Rule) for rhs in rhses)
         if len(rhses) == 1:
             rhs, = rhses
             if isinstance(rhs, grammar.Sequence):
-                if rhs.tag.visual.startswith('anon-'):
-                    add_rule(lhs, rhs.bits)
+                if rhs.tag.visual.startswith(('anon-', 'tag-')):
+                    add_rule(lhs, rhs.bits, name, deriv)
                     return
         for i, rhs in enumerate(rhses):
             while isinstance(rhs, grammar.Alias):
                 rhses[i] = rhs = rhs.child
             if isinstance(rhs, grammar.Option):
-                add_rule(lhs, rhses[:i] + rhses[i+1:])
-                add_rule(lhs, rhses[:i] + [rhs.child] + rhses[i+1:])
+                # We only need to track the omitted cases.
+                add_rule(lhs, rhses[:i] + rhses[i+1:], name, deriv + [i])
+                add_rule(lhs, rhses[:i] + [rhs.child] + rhses[i+1:], name, deriv)
                 return
             if isinstance(rhs, grammar.Sequence):
-                assert not rhs.tag.visual.startswith('anon-')
+                assert not rhs.tag.visual.startswith(('anon-', 'tag-'))
         rules.append((lhs.dash, [rhs.tag.dash for rhs in rhses]))
+        derivs.append((name, deriv))
 
     for key, rule in gram.rules.items():
         assert key == rule.tag.visual
@@ -416,18 +420,18 @@ def lower_grammar(gram):
             continue
         if isinstance(rule, (grammar.Option, grammar.Alias)):
             continue
-        if key.startswith('anon-'):
+        if key.startswith(('anon-', 'tag-')):
             continue
         nonterminals.append(rule.tag.dash)
         if isinstance(rule, grammar.Sequence):
-            add_rule(rule.tag, rule.bits)
+            add_rule(rule.tag, rule.bits, rule.tag.dash, [])
             continue
         if isinstance(rule, grammar.Alternative):
             for alt in rule.bits:
-                add_rule(rule.tag, [alt])
+                add_rule(rule.tag, [alt], alt.tag.dash, [])
             continue
         assert False, '%s has unknown subclass %s' % (rule.tag.visual, type(rule).__name__)
-    return Grammar(terminals, nonterminals, rules)
+    return Grammar(terminals, nonterminals, rules, derivs=derivs)
 
 def lower_lexicon(gram):
     symbols = [Symbol(term.tag.dash, term.regex) for term in gram.patterns]
@@ -443,11 +447,59 @@ class ParserError(Error):
     pass
 
 class Parser:
-    __slots__ = ('_py_tokenizer', '_py_automaton')
+    __slots__ = ('_py_tokenizer', '_py_automaton', '_classes', 'Tree', 'Nothing', 'Terminal', 'Nonterminal')
 
     def __init__(self, grammar):
+        print('%s: creating tokenizer ...' % grammar.language.dash)
         self._py_tokenizer = Tokenizer(lower_lexicon(grammar))
+        print('%s: creating automaton ...' % grammar.language.dash)
         self._py_automaton = Automaton(lower_grammar(grammar))
+
+        self._classes = self.build_classes(grammar)
+
+    def build_classes(self, g):
+        rv = {}
+        class Tree:
+            __slots__ = ()
+        self.Tree = Tree
+
+        class Nothing(Tree):
+            __slots__ = ()
+        rv['nothing'] = self.Nothing = Nothing
+
+        class Terminal(Tree):
+            __slots__ = ('data',)
+
+            def __init__(self, data):
+                assert isinstance(data, bytes)
+                self.data = data
+        self.Terminal = Terminal
+
+        class Nonterminal(Tree):
+            __slots__ = ('children',)
+
+            def __init__(self, children):
+                assert isinstance(children, list)
+                assert all(isinstance(child, Tree) for child in children)
+                self.children = children
+        self.Nonterminal = Nonterminal
+
+        for rule in g.rules.values():
+            if isinstance(rule, grammar.Term):
+                base = Terminal
+            elif isinstance(rule, grammar.Sequence):
+                base = Nonterminal
+            else:
+                assert isinstance(rule, (grammar.Option, grammar.Alias, grammar.Alternative))
+                continue
+            class Foo(base):
+                __slots__ = ()
+            Foo.tag = rule.tag
+            Foo.__name__ = rule.tag.camel
+            Foo.__qualname__ = '%s.%s' % (g.language.lower, Foo.__name__)
+            Foo.__module__ = None
+            rv[rule.tag.dash] = Foo
+        return rv
 
     def reset(self):
         self._py_tokenizer.reset()
@@ -465,19 +517,16 @@ class Parser:
                 break
             sym_type, sym_data = sym
             if sym_type == 'error':
-                assert (sym_data == '') == (at_eof)
                 if at_eof:
                     sym_type = '$end'
                 else:
                     raise LexerError(sym_data)
             if sym_type == 'whitespace':
                 continue
-            print(sym, grammar._indices.get(sym[0]))
             if not automaton.feed(sym_type, sym_data):
-                raise ParserError('Unexpected %s: %s'(sym_type, sym_data))
-            automaton.dump_trees()
+                raise ParserError('Unexpected %s: %s' % (sym_type, sym_data))
             if sym_data == '':
                 break
 
-    def dump(self):
-        self._py_automaton.dump_trees()
+    def get(self):
+        return self._py_automaton.get(self._classes)

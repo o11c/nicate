@@ -201,7 +201,7 @@ class Grammar:
                             undefined.add(b.visual)
                     else:
                         used.add(b.tag.visual)
-            elif isinstance(v, (Alias, Option, Star, Plus)):
+            elif isinstance(v, (Alias, Option, Separator, Delimiter, Star, Plus)):
                 if isinstance(v.child, IdentifierCase):
                     used.add(v.child.visual)
                     try:
@@ -212,7 +212,7 @@ class Grammar:
                     used.add(v.child.tag.visual)
             else:
                 assert isinstance(v, Term), type(v).__name__
-        nullable = [k for (k, v) in self.rules.items() if not isinstance(v, (Option, Alias, Star)) and v.nullable()]
+        nullable = [k for (k, v) in self.rules.items() if not isinstance(v, (Option, Separator, Delimiter, Alias, Star)) and v.nullable()]
         if nullable:
             nullable.sort()
             print('Warning: Nullable rules (%d):' % len(nullable))
@@ -242,14 +242,14 @@ class Grammar:
         if ty.startswith('_'):
             nouscore = nouscore.lower()
         regex = re_escape(ty)
-        self.set_rule(ty, Term(IdentifierCase('kw-' + nouscore, ty), False, regex))
+        self.set_rule(ty, Term(IdentifierCase('kw-' + nouscore, ty), False, regex=regex))
 
     def add_atom(self, ty, regex):
-        self.set_rule(ty, Term(IdentifierCase('atom-' + ty, ty), True, regex))
+        self.set_rule(ty, Term(IdentifierCase('atom-' + ty, ty), True, regex=regex))
 
     def add_symbol(self, sym, ty):
-        regex = re_escape(sym)
-        self.set_rule(sym, Term(IdentifierCase('sym-' + ty, sym), False, regex))
+        regex = re_escape(unquote(sym))
+        self.set_rule(sym, Term(IdentifierCase('sym-' + ty, sym), False, regex=regex))
 
     def add_rule(self, name, alts, tags):
         assert len(alts) == len(tags)
@@ -287,6 +287,10 @@ class Grammar:
     def get_rule(self, vis):
         if vis.endswith('?'):
             return self.get_opt(vis, Option, 'opt-')
+        if vis.endswith('&'):
+            return self.get_opt(vis, Separator, 'sep-')
+        if vis.endswith('!'):
+            return self.get_opt(vis, Delimiter, 'delim-')
         if vis.endswith('*'):
             return self.get_opt(vis, Star, 'star-')
         if vis.endswith('+'):
@@ -317,7 +321,7 @@ class Rule:
 
 class Term(Rule):
     __slots__ = ('tag', 'is_atom', 'regex')
-    def __init__(self, tag, is_atom, regex):
+    def __init__(self, tag, is_atom, *, regex):
         self.tag = tag
         self.is_atom = is_atom
         self.regex = regex
@@ -346,6 +350,54 @@ class Option(Rule):
         child_tag = self.child.struct_tag()
         child_tag = IdentifierCase(child_tag.dash.split('-', 1)[1])
         return 'opt' + child_tag
+
+# A separator must *always* be used as the last member of a sequence, which
+# in turn must be in some repeating context.
+class Separator(Rule):
+    __slots__ = ('tag', 'child')
+    def __init__(self, tag, child):
+        assert False, 'NYI'
+        self.tag = tag
+        self.child = child
+
+    def nullable(self, stack=None):
+        if not isinstance(self.child, IdentifierCase):
+            assert not self.child.nullable(stack)
+        return True
+
+    def comment(self, lang):
+        return '%s | %s' % ((lang + self.child.tag).camel, (lang + 'nothing').camel)
+
+    def struct_tag(self):
+        return 'sep' + self.child.struct_tag()
+
+# For our purposes, "delimiter" is a node that can either act as a
+# terminator or a separator.
+#
+# For example, the comma in C can be used like:
+#
+#   int x[] = {1, 2};
+#   int x[] = {1, 2, };
+#
+# Note that a node that can only act as a terminator needs no special
+# handling.
+class Delimiter(Rule):
+    __slots__ = ('tag', 'child')
+    def __init__(self, tag, child):
+        assert False, 'NYI'
+        self.tag = tag
+        self.child = child
+
+    def nullable(self, stack=None):
+        if not isinstance(self.child, IdentifierCase):
+            assert not self.child.nullable(stack)
+        return True
+
+    def comment(self, lang):
+        return '%s | %s' % ((lang + self.child.tag).camel, (lang + 'nothing').camel)
+
+    def struct_tag(self):
+        return 'delim' + self.child.struct_tag()
 
 class Star(Rule):
     __slots__ = ('tag', 'child')
