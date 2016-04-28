@@ -94,12 +94,44 @@ def test_regex_atom2():
     do_match('\\000', '\0')
     do_match('\\300', b'\300')
     do_match('\\377', b'\377')
+
     do_match('\\x00', '\x00')
     do_match('\\x0f', '\x0f')
     do_match('\\x1f', '\x1f')
     do_match('\\xf0', b'\xf0')
     do_match('\\xf1', b'\xf1')
     do_match('\\xff', b'\xff')
+
+    do_match('\\c?', '\x7f')
+    do_match('\\c@', '\x00')
+    do_match('\\cA', '\x01')
+    do_match('\\cZ', '\x1a')
+    do_match('\\c[', '\x1b')
+    do_match('\\c\\', '\x1c')
+    do_match('\\c]', '\x1d')
+    do_match('\\c^', '\x1e')
+    do_match('\\c_', '\x1f')
+
+    do_match('\\a', '\a')
+    do_match('\\b', '\b')
+    do_match('\\e', '\x1b')
+    do_match('\\f', '\f')
+    do_match('\\n', '\n')
+    do_match('\\r', '\r')
+    do_match('\\t', '\t')
+    do_match('\\v', '\v')
+
+def test_regex_quote():
+    do_match("\"'\"", "'")
+    do_match("\"\\\"\"", "\"")
+    do_match("\"\\'\"", "'")
+    do_match('"\\\\"', "\\")
+    do_match('\'"\'', '"')
+    do_match("'\\'", '\\')
+
+def test_regex_quote2():
+    do_match('""\\0', '\0')
+    do_match("''\\0", '\0')
 
 def test_regex_repeat():
     do_match('ab?c', 'ac')

@@ -603,10 +603,10 @@ static Result parse_atom(Pool *pool, const char *re, const char *re_end)
                     maybe_end = (const char *)memchr(wip, '"', re_end - wip);
                     if (!maybe_end)
                     {
-                        fail("missing `'`");
+                        fail("missing `\"`");
                     }
                 }
-                bs = (const char *)memchr(wip, '\\', re_end - wip);
+                bs = (const char *)memchr(wip, '\\', maybe_end - wip);
                 if (!bs)
                 {
                     Nfa *tmp = nfa_text_slice(pool, wip, maybe_end - wip);
