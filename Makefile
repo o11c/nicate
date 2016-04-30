@@ -86,7 +86,8 @@ export LD_PRELOAD:=$(shell ${CC} -print-file-name=libasan.so):${LD_PRELOAD}
 export ASAN_OPTIONS=malloc_context_size=4:abort_on_error=1
 export LSAN_OPTIONS=suppressions=leak-suppressions.txt:print_suppressions=0
 else
-TEST_WRAPPER = valgrind
+# Python is not valgrind-clean. This never worked.
+#TEST_WRAPPER = valgrind
 override LDFLAGS += -Wl,--no-undefined
 endif
 
@@ -126,7 +127,7 @@ gen/%.gen.c gen/%.gen.h: gram/%.gram nicate/*.py
 	${PYTHON} -m nicate.grammar $< gen/$*.gen.c gen/$*.gen.h
 gen/%.gen.c: example/%.py
 	$(MKDIR_FIRST)
-	./$< > $@
+	${PYTHON} $< > $@
 gen/%.gen.c: bin/%.x
 	$(MKDIR_FIRST)
 	./$< > $@
