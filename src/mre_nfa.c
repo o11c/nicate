@@ -437,6 +437,7 @@ static EpsilonTransitions *epsilon_transitions_create(Nfa *nfa)
         memcpy(&rv->begin[i], e->key.data, sizeof(rv->begin[i]));
     }
     assert (!i && !it);
+    /* Okay that little-endian sort is "wrong", we only do prefix lookups. */
     qsort(rv->begin, size, sizeof(*rv->begin), epsilon_key_compare);
     return rv;
 }
@@ -662,6 +663,7 @@ static CharTransitions *char_transitions_create(Nfa *nfa)
         memcpy(&rv->begin[i], e->key.data, sizeof(rv->begin[i]));
     }
     assert (!i && !it);
+    /* Okay that little-endian sort is "wrong", we only do prefix lookups. */
     qsort(rv->begin, size, sizeof(*rv->begin), char_key_compare);
     return rv;
 }
@@ -771,10 +773,7 @@ static void fill_epsilons_from(BitSet *states, EpsilonTransitions *transitions, 
         if (!was)
         {
             bitset_set(states, to);
-            if (to < from)
-            {
-                fill_epsilons_from(states, transitions, to);
-            }
+            fill_epsilons_from(states, transitions, to);
         }
     }
 }
@@ -789,6 +788,7 @@ static void fill_epsilons(BitSet *states, size_t num_states, size_t num_accept, 
         }
     }
 
+    /* Remove states without char transitions (allows much more merging). */
     for (si = 0; si < num_states; ++si)
     {
         if (bitset_test(states, si))

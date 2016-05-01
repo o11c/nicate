@@ -210,6 +210,22 @@ def test_regex_class():
     do_match('[a-z]', 'y')
     do_match('[a-z]', 'z')
 
+def test_regex_other():
+    do_match('(a|b)+', 'a')
+    do_match('(a|b)+', 'aa')
+    do_match('(a|b)+', 'ab')
+    do_match('(a|b)+', 'b')
+    do_match('(a|b)+', 'ba')
+    do_match('(a|b)+', 'bb')
+
+    do_match('q(a|b)*', 'q')
+    do_match('q(a|b)*', 'qa')
+    do_match('q(a|b)*', 'qaa')
+    do_match('q(a|b)*', 'qab')
+    do_match('q(a|b)*', 'qb')
+    do_match('q(a|b)*', 'qba')
+    do_match('q(a|b)*', 'qbb')
+
 def test_regex_seq():
     l = nicate.Lexicon([
         nicate.Symbol('whitespace', '\\ *[ \\n]'),
