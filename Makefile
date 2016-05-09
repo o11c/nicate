@@ -95,17 +95,21 @@ endif
 .SECONDARY:
 .DELETE_ON_ERROR:
 
-default: hello.gen.run hello2.gen.run obj/gnu-c.gen.o obj/nicate-glass.gen.o
+default: bin/hello.x bin/hello.gen.x bin/hello2.gen.x bin/hello3.gen.gen.x
+default: lib/libnicate.so
+default: obj/gnu-c.gen.o obj/nicate-glass.gen.o
+test: hello.gen.run hello2.gen.run hello3.gen.gen.run
 test: test-py
 test-py: lib/libnicate.so
 	@echo Note: assert rewriting may be slow the first time.
 	${TEST_WRAPPER} ${PYTHON} -m pytest nicate/ ${PYTEST_ARGS}
 
-bin/hello.x: obj/hello.o lib/libnicate.so
+bin/hello.x: lib/libnicate.so
+bin/hello3.gen.x: lib/libnicate.so
+
 lib/libnicate.so: $(addprefix obj/,${LIB_OBJECTS})
 # force order
 obj/bridge.o obj/builder.o: gen/gnu-c.gen.h
-gen/hello2.gen.c: lib/libnicate.so nicate/*.py
 
 lib/lib%.so: obj/%.o
 	$(MKDIR_FIRST)
@@ -125,12 +129,14 @@ obj/%.o: example/%.c
 gen/%.gen.c gen/%.gen.h: gram/%.gram nicate/*.py
 	$(MKDIR_FIRST)
 	${PYTHON} -m nicate.grammar $< gen/$*.gen.c gen/$*.gen.h
-gen/%.gen.c: example/%.py
+gen/%.gen.c: example/%.py lib/libnicate.so nicate/*.py
 	$(MKDIR_FIRST)
 	${PYTHON} $< > $@
 gen/%.gen.c: bin/%.x
 	$(MKDIR_FIRST)
 	./$< > $@
+gen/%.gen.c: example/%.glass lib/libnicate.so nicate/*.py
+	${PYTHON} -m nicate.glass < $< > $@
 %.run: bin/%.x
 	./$<
 

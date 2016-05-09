@@ -28,8 +28,8 @@ atom decimal-literal [1-9][0-9]*
 atom octal-literal 0[oO]?[0-7]*
 atom hexadecimal-literal 0[xX][0-9a-fA-F]+
 atom binary-literal 0[bB][01]+
-atom character-literal \'([^\']|\\.)*\'
-atom string-literal \"([^\"]|\\.)*\"
+atom character-literal \'([^\\']|\\.)*\'
+atom string-literal \"([^\\"]|\\.)*\"
 
 symbol '[' lbracket
 symbol ']' rbracket
@@ -38,6 +38,7 @@ symbol ')' rparen
 symbol '{' lbrace
 symbol '}' rbrace
 symbol '.' dot
+symbol '...' ellipsis
 symbol '->' arrow
 symbol '++' incr
 symbol '--' decr
@@ -63,17 +64,17 @@ symbol '&&' logical-and
 symbol '||' logical-or
 #symbol '?' query
 symbol ':' colon
-symbol '=' assign
-symbol '*=' star-assign
-symbol '/=' slash-assign
-symbol '%=' percent-assign
-symbol '+=' plus-assign
-symbol '-=' minus-assign
-symbol '<<=' lshift-assign
-symbol '>>=' rshift-assign
-symbol '&=' ampersand-assign
-symbol '^=' caret-assign
-symbol '|=' pipe-assign
+symbol '=' be
+symbol '*=' star-be
+symbol '/=' slash-be
+symbol '%=' percent-be
+symbol '+=' plus-be
+symbol '-=' minus-be
+symbol '<<=' lshift-be
+symbol '>>=' rshift-be
+symbol '&=' ampersand-be
+symbol '^=' caret-be
+symbol '|=' pipe-be
 symbol ',' comma
 symbol ';' semicolon
 symbol '@' at
@@ -88,55 +89,58 @@ stmt:
     attr-stmt
     noattr-stmt
 attr-stmt:
-    attr attr-stmt                                          #annotated-statement
-    union id maybe-struct-body                              #union-statement
-    struct id maybe-struct-body                             #struct-statement
-    enum id maybe-enum-body                                 #enum-statement
-    fun fun-sig maybe-compound-stmt                         #fun-statment
-    assign? ';'                                             #expr-statement
+    attr attr-stmt                                          #annotated-stmt
+    union id maybe-struct-body                              #union-stmt
+    struct id maybe-struct-body                             #struct-stmt
+    enum id maybe-enum-body                                 #enum-stmt
+    fun id fun-sig maybe-compound-stmt                      #fun-stmt
     let typed-id ';'                                        #declaration
-    let typed-id '=' expr ';'                               #initialized-declaration
+    let maybe-typed-id '=' expr ';'                         #initialized-declaration
 noattr-stmt:
     comment
-    id ':' stmt                                             #labeled-statement
-    default ':' stmt                                        #default-statement
-    case expr ':' stmt                                      #case-statement
-    while '(' expr ')' compound-stmt                        #while-statement
-    do compound-stmt while '(' expr ')' ';'                 #do-statement
-    goto id ';'                                             #goto-statement
-    break ';'                                               #break-statement
-    continue ';'                                            #continue-statement
-    return expr? ';'                                        #return-statement
-    switch '(' expr ')' compound-stmt                       #switch-statement
+    assign? ';'                                             #expr-stmt
+    id ':' stmt                                             #labeled-stmt
+    default ':' stmt                                        #default-stmt
+    case expr ':' stmt                                      #case-stmt
+    while '(' expr ')' compound-stmt                        #while-stmt
+    do compound-stmt while '(' expr ')' ';'                 #do-stmt
+    goto id ';'                                             #goto-stmt
+    break ';'                                               #break-stmt
+    continue ';'                                            #continue-stmt
+    return expr? ';'                                        #return-stmt
+    switch '(' expr ')' compound-stmt                       #switch-stmt
     if-or-compound-stmt
 if-or-compound-stmt:
     compound-stmt
-    if '(' expr ')' compound-stmt                           #if-statement
-    if '(' expr ')' compound-stmt else if-or-compound-stmt  #if-else-statement
+    if '(' expr ')' compound-stmt                           #if-stmt
+    if '(' expr ')' compound-stmt else if-or-compound-stmt  #if-else-stmt
 maybe-struct-body:
     ';'
     '{' typed-id-list? '}'                                  #struct-body
 maybe-enum-body:
     ';'
-    '{' id-list? '}'                                        #enum-body
+    '{' enum-list? '}'                                      #enum-body
 fun-sig:
-    '(' typed-id-list? ')' '->' expr
+    '(' typed-id-list? ')' '->' expr                        #fixed-fun-sig
+    '(' typed-id-list ',' '...' ')' '->' expr               #variadic-fun-sig
 maybe-compound-stmt:
     ';'
     compound-stmt
 compound-stmt:
     '{' stmt-list? '}'
+maybe-typed-id:
+    typed-id
+    id ':'                                                  #untyped-id
 typed-id:
     id ':' expr
 typed-id-list:
-    typed-id-list ',' typed-id                              #multi-typed-id-list
-    typed-id
-id-list:
-    id-list ',' id                                          #multi-id-list
-    id
+    typed-id-list? ','= typed-id
+enumerator:
+    id '='? expr=
+enum-list:
+    enum-list? ','= enumerator
 expr-list:
-    expr-list ',' expr                                      #multi-expr-list
-    expr
+    expr-list? ','= expr
 stmt-list:
     stmt-list? stmt
 assign:
@@ -192,6 +196,7 @@ logical-or-expr:
     logical-or-expr '||' logical-and-expr                   #log-or-expr
 unary-expr:
     postfix-expr
+    attr unary-expr                                         #attr-expr
     '++' unary-expr                                         #pre-incr-expr
     '--' unary-expr                                         #pre-decr-expr
     '&' unary-expr                                          #addressof-expr
@@ -209,8 +214,9 @@ postfix-expr:
 primary-expr:
     id
     literal
-# TODO decide whether to support `'(' assign ')'` or `'(' expr-list? ')'`
-    '(' expr ')'                                            #paren-expr
+# TODO decide whether to support `'(' expr-list? ')'`
+    '(' assign ')'                                          #paren-expr
+    '[' expr-list? ']'                                      #array-literal
 literal:
     decimal-floating-literal
     hexadecimal-floating-literal

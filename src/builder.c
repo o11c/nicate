@@ -164,6 +164,7 @@ Builder *builder_create(void)
         GnuCAnyTypeSpecifier *kw_signed = (GnuCAnyTypeSpecifier *)gnu_c_create_kw_signed(pool);
         GnuCAnyTypeSpecifier *kw_unsigned = (GnuCAnyTypeSpecifier *)gnu_c_create_kw_unsigned(pool);
         GnuCAnyTypeSpecifier *kw_void = (GnuCAnyTypeSpecifier *)gnu_c_create_kw_void(pool);
+        GnuCAnyTypeSpecifier *kw_bool = (GnuCAnyTypeSpecifier *)gnu_c_create_kw_bool(pool);
         GnuCAnyTypeSpecifier *kw_char = (GnuCAnyTypeSpecifier *)gnu_c_create_kw_char(pool);
         GnuCAnyTypeSpecifier *kw_short = (GnuCAnyTypeSpecifier *)gnu_c_create_kw_short(pool);
         GnuCAnyTypeSpecifier *kw_int = (GnuCAnyTypeSpecifier *)gnu_c_create_kw_int(pool);
@@ -172,6 +173,7 @@ Builder *builder_create(void)
         GnuCAnyTypeSpecifier *kw_double = (GnuCAnyTypeSpecifier *)gnu_c_create_kw_double(pool);
 
         rv->ty_void_ds = (GnuCTreeTailDeclarationSpecifiers *)kw_void;
+        rv->ty_bool_ds = (GnuCTreeTailDeclarationSpecifiers *)kw_bool;
         rv->ty_char_ds = (GnuCTreeTailDeclarationSpecifiers *)kw_char;
         rv->ty_signed_char_ds = helper_create_type_specifiers2a(rv, kw_signed, kw_char);
         rv->ty_unsigned_char_ds = helper_create_type_specifiers2a(rv, kw_unsigned, kw_char);
@@ -191,6 +193,7 @@ Builder *builder_create(void)
 
 
         rv->ty_void_sql = (GnuCAnySpecifierQualifierList *)kw_void;
+        rv->ty_bool_sql = (GnuCAnySpecifierQualifierList *)kw_bool;
         rv->ty_char_sql = (GnuCAnySpecifierQualifierList *)kw_char;
         rv->ty_signed_char_sql = helper_create_type_specifiers2b(rv, kw_signed, kw_char);
         rv->ty_unsigned_char_sql = helper_create_type_specifiers2b(rv, kw_unsigned, kw_char);
@@ -254,6 +257,45 @@ BuildTranslationUnit *build_tu(Builder *b, size_t ntops, BuildStatement **tops)
     }
     return build_tu_ast(b, all);
 }
+BuildStatement *build_comment(Builder *b, const char *txt)
+{
+    GnuCAtomComment *ast = gnu_c_create_atom_comment(b->pool, txt);
+    return build_comment_ast(b, ast);
+}
+
+BuildStatement *build_struct_declaration(Builder *b, const char *name)
+{
+    GnuCAnyStructOrUnion *ast_kw = (GnuCAnyStructOrUnion *)b->kw_struct;
+    GnuCOptAttributes *no_attrs = (GnuCOptAttributes *)b->nothing;
+    GnuCAtomIdentifier *id = build_id(b, name);
+    GnuCTreeTagForwardStructOrUnionSpecifier *ast_struct = gnu_c_create_tree_tag_forward_struct_or_union_specifier(b->pool, ast_kw, no_attrs, id);
+    GnuCOptInitDeclaratorList *no_idl = (GnuCOptInitDeclaratorList *)b->nothing;
+    GnuCAnyDeclarationSpecifiers *ast_spec = (GnuCAnyDeclarationSpecifiers *)ast_struct;
+    GnuCTreeDeclaration *ast_decl = gnu_c_create_tree_declaration(b->pool, ast_spec, no_idl, b->semicolon);
+    return build_decl_ast(b, ast_decl);
+}
+BuildStatement *build_union_declaration(Builder *b, const char *name)
+{
+    GnuCAnyStructOrUnion *ast_kw = (GnuCAnyStructOrUnion *)b->kw_union;
+    GnuCOptAttributes *no_attrs = (GnuCOptAttributes *)b->nothing;
+    GnuCAtomIdentifier *id = build_id(b, name);
+    GnuCTreeTagForwardStructOrUnionSpecifier *ast_union = gnu_c_create_tree_tag_forward_struct_or_union_specifier(b->pool, ast_kw, no_attrs, id);
+    GnuCOptInitDeclaratorList *no_idl = (GnuCOptInitDeclaratorList *)b->nothing;
+    GnuCAnyDeclarationSpecifiers *ast_spec = (GnuCAnyDeclarationSpecifiers *)ast_union;
+    GnuCTreeDeclaration *ast_decl = gnu_c_create_tree_declaration(b->pool, ast_spec, no_idl, b->semicolon);
+    return build_decl_ast(b, ast_decl);
+}
+BuildStatement *build_enum_declaration(Builder *b, const char *name)
+{
+    GnuCOptAttributes *no_attrs = (GnuCOptAttributes *)b->nothing;
+    GnuCAtomIdentifier *id = build_id(b, name);
+    GnuCTreeTagForwardEnumSpecifier *ast_enum = gnu_c_create_tree_tag_forward_enum_specifier(b->pool, b->kw_enum, no_attrs, id);
+    GnuCOptInitDeclaratorList *no_idl = (GnuCOptInitDeclaratorList *)b->nothing;
+    GnuCAnyDeclarationSpecifiers *ast_spec = (GnuCAnyDeclarationSpecifiers *)ast_enum;
+    GnuCTreeDeclaration *ast_decl = gnu_c_create_tree_declaration(b->pool, ast_spec, no_idl, b->semicolon);
+    return build_decl_ast(b, ast_decl);
+}
+
 static GnuCOptStructDeclarationList *build_members(Builder *b, size_t nmembs, BuildMemberDeclaration **decls)
 {
     GnuCOptStructDeclarationList *all;
@@ -471,6 +513,10 @@ BuildType *build_type_enum(Builder *b, const char *name)
 BuildType *build_type_void(Builder *b)
 {
     return build_type_spec_ast(b, b->ty_void_ds, b->ty_void_sql);
+}
+BuildType *build_type_bool(Builder *b)
+{
+    return build_type_spec_ast(b, b->ty_bool_ds, b->ty_bool_sql);
 }
 BuildType *build_type_char(Builder *b)
 {
@@ -1018,15 +1064,15 @@ BuildExpression *build_expr_int_hex(Builder *b, uintmax_t i, unsigned min_len)
     p = gnu_c_create_atom_hexadecimal_constant(b->pool, buf);
     return build_expr_from_primary(b, (GnuCAnyPrimaryExpression *)p);
 }
-BuildExpression *build_expr_float(Builder *b, long double f)
+BuildExpression *build_expr_float(Builder *b, double f)
 {
     char buf[1 + 1 + 20 + 1 + 1 + 4 + 1];
     int rv;
     GnuCAtomDecimalFloatingConstant *p;
-    long double f2;
-    rv = sprintf(buf, "%.21Le", f);
+    double f2;
+    rv = sprintf(buf, "%.21e", f);
     assert (rv >= 0 && (size_t)rv < sizeof(buf));
-    rv = sscanf(buf, "%Lf", &f2);
+    rv = sscanf(buf, "%lf", &f2);
     assert (rv == 1 && f == f2);
     p = gnu_c_create_atom_decimal_floating_constant(b->pool, buf);
     return build_expr_from_primary(b, (GnuCAnyPrimaryExpression *)p);

@@ -19,6 +19,8 @@
 import collections
 import string
 
+from .util import eprint as print
+
 generated_copyright = '''
 /*
     Copyright © 2015-2016 Ben Longbons
@@ -200,7 +202,7 @@ class Grammar:
                             undefined.add(b.visual)
                     else:
                         used.add(b.tag.visual)
-            elif isinstance(v, (Alias, Option, Separator, Delimiter, Star, Plus)):
+            elif isinstance(v, (Alias, Option, Slave, Separator, Delimiter, Star, Plus)):
                 if isinstance(v.child, IdentifierCase):
                     used.add(v.child.visual)
                     try:
@@ -211,7 +213,7 @@ class Grammar:
                     used.add(v.child.tag.visual)
             else:
                 assert isinstance(v, Term), type(v).__name__
-        nullable = [k for (k, v) in self.rules.items() if not isinstance(v, (Option, Separator, Delimiter, Alias, Star)) and v.nullable()]
+        nullable = [k for (k, v) in self.rules.items() if not isinstance(v, (Option, Slave, Separator, Delimiter, Alias, Star)) and v.nullable()]
         if nullable:
             nullable.sort()
             print('Warning: Nullable rules (%d):' % len(nullable))
@@ -286,6 +288,8 @@ class Grammar:
     def get_rule(self, vis):
         if vis.endswith('?'):
             return self.get_opt(vis, Option, 'opt-')
+        if vis.endswith('='):
+            return self.get_opt(vis, Slave, 'slave-')
         if vis.endswith('&'):
             return self.get_opt(vis, Separator, 'sep-')
         if vis.endswith('!'):
@@ -336,6 +340,7 @@ class Option(Rule):
     def __init__(self, tag, child):
         self.tag = tag
         self.child = child
+        assert not isinstance(child, Slave)
 
     def nullable(self, stack=None):
         if not isinstance(self.child, IdentifierCase):
@@ -350,6 +355,27 @@ class Option(Rule):
         child_tag = IdentifierCase(child_tag.dash.split('-', 1)[1])
         return 'opt' + child_tag
 
+class Slave(Rule):
+    # This is identical to `Option` but with different lowering semantics.
+    __slots__ = ('tag', 'child')
+    def __init__(self, tag, child):
+        self.tag = tag
+        self.child = child
+        assert not isinstance(child, Slave)
+
+    def nullable(self, stack=None):
+        if not isinstance(self.child, IdentifierCase):
+            assert not self.child.nullable(stack)
+        return True
+
+    def comment(self, lang):
+        return '%s | %s' % ((lang + self.child.tag).camel, (lang + 'nothing').camel)
+
+    def struct_tag(self):
+        child_tag = self.child.struct_tag()
+        child_tag = IdentifierCase(child_tag.dash.split('-', 1)[1])
+        return 'slave' + child_tag
+
 # A separator must *always* be used as the last member of a sequence, which
 # in turn must be in some repeating context.
 class Separator(Rule):
@@ -358,6 +384,7 @@ class Separator(Rule):
         assert False, 'NYI'
         self.tag = tag
         self.child = child
+        assert not isinstance(child, Slave)
 
     def nullable(self, stack=None):
         if not isinstance(self.child, IdentifierCase):
@@ -386,6 +413,7 @@ class Delimiter(Rule):
         assert False, 'NYI'
         self.tag = tag
         self.child = child
+        assert not isinstance(child, Slave)
 
     def nullable(self, stack=None):
         if not isinstance(self.child, IdentifierCase):
@@ -404,6 +432,7 @@ class Star(Rule):
         assert False, 'NYI'
         self.tag = tag
         self.child = child
+        assert not isinstance(child, Slave)
 
     def nullable(self, stack=None):
         if not isinstance(self.child, IdentifierCase):
@@ -422,6 +451,7 @@ class Plus(Rule):
         assert False, 'NYI'
         self.tag = tag
         self.child = child
+        assert not isinstance(child, Slave)
 
     def nullable(self, stack=None):
         if not isinstance(self.child, IdentifierCase):
@@ -439,6 +469,7 @@ class Alias(Rule):
     def __init__(self, tag, child):
         self.tag = IdentifierCase('alias-' + tag, tag)
         self.child = child
+        assert not isinstance(child, Slave)
 
     def nullable(self, stack=None):
         if isinstance(self.child, IdentifierCase):
@@ -456,6 +487,11 @@ class Sequence(Rule):
     def __init__(self, tag, bits):
         self.tag = IdentifierCase('tree-' + tag, tag)
         self.bits = list(bits)
+        prev_bit = None
+        for bit in self.bits:
+            if isinstance(bit, Slave):
+                assert isinstance(prev_bit, (Slave, Option))
+            prev_bit = bit
 
     def nullable(self, stack=None):
         stack = stack or []
@@ -475,6 +511,7 @@ class Alternative(Rule):
     def __init__(self, tag, bits):
         self.tag = IdentifierCase('any-' + tag, tag)
         self.bits = list(bits)
+        assert not any(isinstance(child, Slave) for child in self.bits)
 
     def nullable(self, stack=None):
         stack = stack or []
@@ -680,7 +717,7 @@ def emit(grammar, header, source):
                 if len(nn) == 1:
                     head = 'return %s(ast) ||' % (lang + 'is' + nn[0].tag).lower
             c('    %s ast->type == %s;' % (head, (lang + ast.tag).upper))
-        if isinstance(ast, Option):
+        if isinstance(ast, (Option, Slave)):
             c('    return %%(is_nothing)s(ast) || %s(ast);' % (lang + 'is' + ast.child.tag).lower)
         if isinstance(ast, Alias):
             c('    return %s(ast);' % (lang + 'is' + ast.child.tag).lower)
@@ -710,6 +747,10 @@ def emit(grammar, header, source):
     c('        bool no_space = false;')
     if lang.upper == 'GNU_C':
         # sorry, other languages don't get pretty-printing yet.
+        c('        newline |= prev[0] == \'/\' && (prev[1] == \'*\' || prev[1] == \'/\');')
+        c('        newline |= next[0] == \'/\' && (next[1] == \'*\' || next[1] == \'/\');')
+        c('        newline |= prev[0] == \'#\';')
+        c('        newline |= next[0] == \'#\';')
         c('        newline |= strcmp(prev, ";") == 0 && prev_parent != %(upper)s_TREE_TAG_FOR_EXPR_STATEMENT && prev_parent != %(upper)s_TREE_TAG_FOR_EXPR_STATEMENT_EXCEPT_IF && prev_parent != %(upper)s_TREE_TAG_FOR_DECL_STATEMENT && prev_parent != %(upper)s_TREE_TAG_FOR_DECL_STATEMENT_EXCEPT_IF;')
         c('        newline |= strcmp(next, "{") == 0 && next_parent != %(upper)s_TREE_TAG_BRACED_INITIALIZER_COMMA && next_parent != %(upper)s_TREE_TAG_BRACED_INITIALIZER;')
         c('        newline |= strcmp(prev, "{") == 0 && prev_parent != %(upper)s_TREE_TAG_BRACED_INITIALIZER_COMMA && prev_parent != %(upper)s_TREE_TAG_BRACED_INITIALIZER;')

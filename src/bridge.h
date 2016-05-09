@@ -104,6 +104,7 @@ struct Builder
 
     /* types (in non-struct declarations) */
     GnuCTreeTailDeclarationSpecifiers *ty_void_ds;
+    GnuCTreeTailDeclarationSpecifiers *ty_bool_ds;
     GnuCTreeTailDeclarationSpecifiers *ty_char_ds;
     GnuCTreeTailDeclarationSpecifiers *ty_signed_char_ds;
     GnuCTreeTailDeclarationSpecifiers *ty_unsigned_char_ds;
@@ -123,6 +124,7 @@ struct Builder
 
     /* types (in struct declarations and bare type names) */
     GnuCAnySpecifierQualifierList *ty_void_sql;
+    GnuCAnySpecifierQualifierList *ty_bool_sql;
     GnuCAnySpecifierQualifierList *ty_char_sql;
     GnuCAnySpecifierQualifierList *ty_signed_char_sql;
     GnuCAnySpecifierQualifierList *ty_unsigned_char_sql;
@@ -258,6 +260,7 @@ GnuCAtomTypedefName *build_typedef_name(Builder *b, const char *id);
 BuildTranslationUnit *build_tu_ast(Builder *b, GnuCAliasTranslationUnit *ast);
 BuildStatement *build_stmt_ast(Builder *b, GnuCOptLabels *labels, GnuCAnyBlockItem *ast);
 BuildStatement *build_decl_ast(Builder *b, GnuCTreeDeclaration *ast);
+BuildStatement *build_comment_ast(Builder *b, GnuCAtomComment *ast);
 BuildStorageClass *build_storage_class_ast(Builder *b, GnuCAnyHeadDeclarationSpecifier *ast);
 BuildParamDeclaration *build_param_ast(Builder *b, GnuCAnyParameterDeclaration *ast);
 BuildMemberDeclaration *build_member_ast(Builder *b, GnuCAnyStructDeclaration *ast);

@@ -58,6 +58,11 @@ BuildStatement *build_decl_ast(Builder *b, GnuCTreeDeclaration *ast)
     BuildStatement rv = {NULL, (GnuCAnyBlockItem *)ast, (GnuCAnyExternalDeclaration *)ast};
     return (BuildStatement *)pool_intern(b->pool, &rv, sizeof(rv));
 }
+BuildStatement *build_comment_ast(Builder *b, GnuCAtomComment *ast)
+{
+    BuildStatement rv = {NULL, (GnuCAnyBlockItem *)ast, (GnuCAnyExternalDeclaration *)ast};
+    return (BuildStatement *)pool_intern(b->pool, &rv, sizeof(rv));
+}
 BuildStorageClass *build_storage_class_ast(Builder *b, GnuCAnyHeadDeclarationSpecifier *ast)
 {
     BuildStorageClass rv = {ast};

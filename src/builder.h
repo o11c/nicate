@@ -34,6 +34,10 @@ void builder_free_string(char *);
 
 BuildTranslationUnit *build_tu(Builder *b, size_t ntops, BuildStatement **tops);
 
+BuildStatement *build_comment(Builder *b, const char *txt);
+BuildStatement *build_struct_declaration(Builder *b, const char *name);
+BuildStatement *build_union_declaration(Builder *b, const char *name);
+BuildStatement *build_enum_declaration(Builder *b, const char *name);
 BuildStatement *build_struct_definition(Builder *b, const char *name, size_t nmembs, BuildMemberDeclaration **decls);
 BuildStatement *build_union_definition(Builder *b, const char *name, size_t nmembs, BuildMemberDeclaration **decls);
 BuildStatement *build_enum_definition(Builder *b, const char *name, size_t nvars, BuildEnumerator **vars);
@@ -59,6 +63,7 @@ BuildType *build_type_struct(Builder *b, const char *name);
 BuildType *build_type_union(Builder *b, const char *name);
 BuildType *build_type_enum(Builder *b, const char *name);
 BuildType *build_type_void(Builder *b);
+BuildType *build_type_bool(Builder *b);
 BuildType *build_type_char(Builder *b);
 BuildType *build_type_signed_char(Builder *b);
 BuildType *build_type_unsigned_char(Builder *b);
@@ -110,7 +115,7 @@ BuildExpression *build_expr_string_slice(Builder *b, const char *s, size_t l);
 BuildExpression *build_expr_int(Builder *b, uintmax_t i);
 BuildExpression *build_expr_int_oct(Builder *b, uintmax_t i, unsigned min_len);
 BuildExpression *build_expr_int_hex(Builder *b, uintmax_t i, unsigned min_len);
-BuildExpression *build_expr_float(Builder *b, long double f);
+BuildExpression *build_expr_float(Builder *b, double f);
 
 BuildExpression *build_expr_index(Builder *b, BuildExpression *arr, BuildExpression *idx);
 BuildExpression *build_expr_call(Builder *b, BuildExpression *fun, size_t nargs, BuildExpression **args);

@@ -19,13 +19,9 @@ import cffi
 from collections import namedtuple
 
 from . import grammar
+from .util import u2b, b2u, eprint as print
+from .loc import LocationTracker
 
-
-def u2b(u):
-    return u.encode('utf-8', errors='surrogateescape')
-
-def b2u(b):
-    return b.decode('utf-8', errors='surrogateescape')
 
 def load():
     import sys
@@ -75,7 +71,7 @@ def desc_ty(ty):
     if type(ty) == cffi.model.PrimitiveType:
         if ty.name == '_Bool':
             return 'bool'
-        if ty.name == 'long double':
+        if ty.name == 'double':
             return 'float'
         if ty.name in {'char', 'uint64_t', 'unsigned int'}:
             return ty.name
@@ -338,6 +334,19 @@ class Automaton:
 
     def _get(self, tree, classes):
         while tree.num_children == 1:
+            type_name, deriv = self._py_grammar._derivs[tree.rule]
+            if deriv:
+                # This guarantees that rules of the form:
+                #
+                # tu:
+                #     tu? stmt
+                #
+                # will always return a `tu`, with `nothing` as the sentinel,
+                # rather than a `stmt`. It also handles cases like:
+                #
+                # expr-list:
+                #     expr-list? ','= expr
+                break
             tree = tree.children
         if not tree.num_children:
             type_name = self._py_grammar._names[tree.type]
@@ -385,6 +394,7 @@ def lower_grammar(gram):
     while isinstance(start, grammar.Alias):
         start = start.child
     if isinstance(start, grammar.Option):
+        # not grammar.Slave
         start = start.child
     rules = [('$accept', [start.tag.dash, '$end'])]
     derivs = [('$accept', [])]
@@ -403,8 +413,15 @@ def lower_grammar(gram):
                 rhses[i] = rhs = rhs.child
             if isinstance(rhs, grammar.Option):
                 # We only need to track the omitted cases.
-                add_rule(lhs, rhses[:i] + rhses[i+1:], name, deriv + [i])
+                add_rule(lhs, rhses[:i] + rhses[i+1:], name, deriv + [i+len(deriv)])
                 add_rule(lhs, rhses[:i] + [rhs.child] + rhses[i+1:], name, deriv)
+                return
+            if isinstance(rhs, grammar.Slave):
+                # Slave must be preceded by Option (already split).
+                if deriv and deriv[-1] == i:
+                    add_rule(lhs, rhses[:i] + rhses[i+1:], name, deriv + [i+len(deriv)])
+                else:
+                    add_rule(lhs, rhses[:i] + [rhs.child] + rhses[i+1:], name, deriv)
                 return
             if isinstance(rhs, grammar.Sequence):
                 assert not rhs.tag.visual.startswith(('anon-', 'tag-'))
@@ -418,7 +435,7 @@ def lower_grammar(gram):
             assert len(rules) == 1
             terminals.append(rule.tag.dash)
             continue
-        if isinstance(rule, (grammar.Option, grammar.Alias)):
+        if isinstance(rule, (grammar.Option, grammar.Slave, grammar.Alias)):
             continue
         if key.startswith(('anon-', 'tag-')):
             continue
@@ -447,13 +464,14 @@ class ParserError(Error):
     pass
 
 class Parser:
-    __slots__ = ('_py_tokenizer', '_py_automaton', '_classes', 'Tree', 'Nothing', 'Terminal', 'Nonterminal')
+    __slots__ = ('_py_tokenizer', '_py_automaton', '_loc', '_classes', 'Tree', 'Nothing', 'Terminal', 'Nonterminal')
 
     def __init__(self, grammar):
         print('%s: creating tokenizer ...' % grammar.language.dash)
         self._py_tokenizer = Tokenizer(lower_lexicon(grammar))
         print('%s: creating automaton ...' % grammar.language.dash)
         self._py_automaton = Automaton(lower_grammar(grammar))
+        self._loc = LocationTracker('<unknown-file>')
 
         self._classes = self._build_classes(grammar)
 
@@ -491,7 +509,7 @@ class Parser:
             elif isinstance(rule, grammar.Sequence):
                 base = Nonterminal
             else:
-                assert isinstance(rule, (grammar.Option, grammar.Alias, grammar.Alternative))
+                assert isinstance(rule, (grammar.Option, grammar.Slave, grammar.Alias, grammar.Alternative))
                 continue
             class Foo(base):
                 __slots__ = ()
@@ -505,6 +523,7 @@ class Parser:
     def reset(self):
         self._py_tokenizer.reset()
         self._py_automaton.reset()
+        self._loc.reset()
 
     def feed(self, text, at_eof):
         tokenizer = self._py_tokenizer
@@ -521,13 +540,23 @@ class Parser:
                 if at_eof:
                     sym_type = '$end'
                 else:
-                    raise LexerError(sym_data)
-            if sym_type == 'whitespace':
-                continue
-            if not automaton.feed(sym_type, sym_data):
-                raise ParserError('Unexpected %s: %s' % (sym_type, sym_data))
+                    raise LexerError(self._loc.error('Unexpected character: %s' % sym_data))
+            if sym_type != 'whitespace':
+                if not automaton.feed(sym_type, sym_data):
+                    raise ParserError(self._loc.error('Unexpected %s: %s' % (sym_type, sym_data)))
+            self._loc.track(sym_type, sym_data)
             if sym_data == '':
                 break
 
     def get(self):
         return self._py_automaton.get(self._classes)
+
+    def parse_file(self, fo):
+        self.reset()
+        self._loc.file = getattr(fo, 'name', '<unknown-file>')
+        while True:
+            chunk = fo.read(512)
+            self.feed(chunk, not chunk)
+            if not chunk:
+                break
+        return self.get()
