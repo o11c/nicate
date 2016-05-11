@@ -84,7 +84,7 @@ start tu
 tu:
     tu? stmt
 attr:
-    '@' id
+    '@' id '('? expr-list= ')'=
 stmt:
     attr-stmt
     noattr-stmt
@@ -196,8 +196,7 @@ logical-or-expr:
     logical-and-expr
     logical-or-expr '||' logical-and-expr                   #log-or-expr
 unary-expr:
-    postfix-expr
-    attr unary-expr                                         #attr-expr
+    quasipostfix-expr
     '++' unary-expr                                         #pre-incr-expr
     '--' unary-expr                                         #pre-decr-expr
     '&' unary-expr                                          #addressof-expr
@@ -205,6 +204,9 @@ unary-expr:
     '-' unary-expr                                          #unary-minus-expr
     '~' unary-expr                                          #bit-not-expr
     '!' unary-expr                                          #log-not-expr
+quasipostfix-expr:
+    postfix-expr
+    quasipostfix-expr attr                                  #attr-expr
 postfix-expr:
     primary-expr
     postfix-expr '[' expr-list? ']'                         #index-expr

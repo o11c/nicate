@@ -42,30 +42,30 @@ struct BuildExpression;
 
 @extern fun build_tu(b: ptr[Builder], ntops: size_t, tops: ptr[ptr[BuildStatement]]) -> ptr[BuildTranslationUnit];
 
-@extern fun build_struct_definition(b: ptr[Builder], name: ptr[@const char], nmembs: size_t, decls: ptr[ptr[BuildMemberDeclaration]]) -> ptr[BuildStatement];
-@extern fun build_union_definition(b: ptr[Builder], name: ptr[@const char], nmembs: size_t, decls: ptr[ptr[BuildMemberDeclaration]]) -> ptr[BuildStatement];
-@extern fun build_enum_definition(b: ptr[Builder], name: ptr[@const char], nvars: size_t, vars: ptr[ptr[BuildEnumerator]]) -> ptr[BuildStatement];
-@extern fun build_function_definition(b: ptr[Builder], nscs: size_t, scs: ptr[ptr[BuildStorageClass]], name: ptr[@const char], fnty: ptr[BuildType], body: ptr[BuildStatement]) -> ptr[BuildStatement];
+@extern fun build_struct_definition(b: ptr[Builder], name: ptr[char @const], nmembs: size_t, decls: ptr[ptr[BuildMemberDeclaration]]) -> ptr[BuildStatement];
+@extern fun build_union_definition(b: ptr[Builder], name: ptr[char @const], nmembs: size_t, decls: ptr[ptr[BuildMemberDeclaration]]) -> ptr[BuildStatement];
+@extern fun build_enum_definition(b: ptr[Builder], name: ptr[char @const], nvars: size_t, vars: ptr[ptr[BuildEnumerator]]) -> ptr[BuildStatement];
+@extern fun build_function_definition(b: ptr[Builder], nscs: size_t, scs: ptr[ptr[BuildStorageClass]], name: ptr[char @const], fnty: ptr[BuildType], body: ptr[BuildStatement]) -> ptr[BuildStatement];
 
 @extern fun build_storage_class_typedef(b: ptr[Builder]) -> ptr[BuildStorageClass];
 @extern fun build_storage_class_extern(b: ptr[Builder]) -> ptr[BuildStorageClass];
 @extern fun build_storage_class_static(b: ptr[Builder]) -> ptr[BuildStorageClass];
 @extern fun build_storage_class_register(b: ptr[Builder]) -> ptr[BuildStorageClass];
 
-@extern fun build_declaration_noinit(b: ptr[Builder], nscs: size_t, scs: ptr[ptr[BuildStorageClass]], type: ptr[BuildType], name: ptr[@const char]) -> ptr[BuildStatement];
-@extern fun build_declaration_init(b: ptr[Builder], nscs: size_t, scs: ptr[ptr[BuildStorageClass]], type: ptr[BuildType], name: ptr[@const char], init: ptr[BuildInitializer]) -> ptr[BuildStatement];
-@extern fun build_param_declaration(b: ptr[Builder], nscs: size_t, scs: ptr[ptr[BuildStorageClass]], type: ptr[BuildType], name: ptr[@const char]) -> ptr[BuildParamDeclaration];
+@extern fun build_declaration_noinit(b: ptr[Builder], nscs: size_t, scs: ptr[ptr[BuildStorageClass]], type: ptr[BuildType], name: ptr[char @const]) -> ptr[BuildStatement];
+@extern fun build_declaration_init(b: ptr[Builder], nscs: size_t, scs: ptr[ptr[BuildStorageClass]], type: ptr[BuildType], name: ptr[char @const], init: ptr[BuildInitializer]) -> ptr[BuildStatement];
+@extern fun build_param_declaration(b: ptr[Builder], nscs: size_t, scs: ptr[ptr[BuildStorageClass]], type: ptr[BuildType], name: ptr[char @const]) -> ptr[BuildParamDeclaration];
 @extern fun build_param_declaration_anon(b: ptr[Builder], nscs: size_t, scs: ptr[ptr[BuildStorageClass]], type: ptr[BuildType]) -> ptr[BuildParamDeclaration];
-@extern fun build_member_declaration(b: ptr[Builder], type: ptr[BuildType], name: ptr[@const char]) -> ptr[BuildMemberDeclaration];
-@extern fun build_member_declaration_bitfield(b: ptr[Builder], type: ptr[BuildType], name: ptr[@const char], width: ptr[BuildExpression]) -> ptr[BuildMemberDeclaration];
+@extern fun build_member_declaration(b: ptr[Builder], type: ptr[BuildType], name: ptr[char @const]) -> ptr[BuildMemberDeclaration];
+@extern fun build_member_declaration_bitfield(b: ptr[Builder], type: ptr[BuildType], name: ptr[char @const], width: ptr[BuildExpression]) -> ptr[BuildMemberDeclaration];
 @extern fun build_member_declaration_bitfield_anon(b: ptr[Builder], type: ptr[BuildType], width: ptr[BuildExpression]) -> ptr[BuildMemberDeclaration];
-@extern fun build_enumerator_noinit(b: ptr[Builder], name: ptr[@const char]) -> ptr[BuildEnumerator];
-@extern fun build_enumerator_init(b: ptr[Builder], name: ptr[@const char], init: ptr[BuildExpression]) -> ptr[BuildEnumerator];
+@extern fun build_enumerator_noinit(b: ptr[Builder], name: ptr[char @const]) -> ptr[BuildEnumerator];
+@extern fun build_enumerator_init(b: ptr[Builder], name: ptr[char @const], init: ptr[BuildExpression]) -> ptr[BuildEnumerator];
 
-@extern fun build_type_typedef(b: ptr[Builder], name: ptr[@const char]) -> ptr[BuildType];
-@extern fun build_type_struct(b: ptr[Builder], name: ptr[@const char]) -> ptr[BuildType];
-@extern fun build_type_union(b: ptr[Builder], name: ptr[@const char]) -> ptr[BuildType];
-@extern fun build_type_enum(b: ptr[Builder], name: ptr[@const char]) -> ptr[BuildType];
+@extern fun build_type_typedef(b: ptr[Builder], name: ptr[char @const]) -> ptr[BuildType];
+@extern fun build_type_struct(b: ptr[Builder], name: ptr[char @const]) -> ptr[BuildType];
+@extern fun build_type_union(b: ptr[Builder], name: ptr[char @const]) -> ptr[BuildType];
+@extern fun build_type_enum(b: ptr[Builder], name: ptr[char @const]) -> ptr[BuildType];
 @extern fun build_type_void(b: ptr[Builder]) -> ptr[BuildType];
 @extern fun build_type_char(b: ptr[Builder]) -> ptr[BuildType];
 @extern fun build_type_signed_char(b: ptr[Builder]) -> ptr[BuildType];
@@ -90,7 +90,7 @@ struct BuildExpression;
 
 @extern fun build_stmt_none(b: ptr[Builder]) -> ptr[BuildStatement];
 @extern fun build_stmt_expr(b: ptr[Builder], expr: ptr[BuildExpression]) -> ptr[BuildStatement];
-@extern fun build_stmt_label(b: ptr[Builder], label: ptr[@const char], target: ptr[BuildStatement]) -> ptr[BuildStatement];
+@extern fun build_stmt_label(b: ptr[Builder], label: ptr[char @const], target: ptr[BuildStatement]) -> ptr[BuildStatement];
 @extern fun build_stmt_case(b: ptr[Builder], expr: ptr[BuildExpression], target: ptr[BuildStatement]) -> ptr[BuildStatement];
 @extern fun build_stmt_default(b: ptr[Builder], target: ptr[BuildStatement]) -> ptr[BuildStatement];
 @extern fun build_stmt_compound(b: ptr[Builder], nstmts: size_t, stmts: ptr[ptr[BuildStatement]]) -> ptr[BuildStatement];
@@ -99,7 +99,7 @@ struct BuildExpression;
 @extern fun build_stmt_while(b: ptr[Builder], cond: ptr[BuildExpression], body: ptr[BuildStatement]) -> ptr[BuildStatement];
 @extern fun build_stmt_do_while(b: ptr[Builder], body: ptr[BuildStatement], cond: ptr[BuildExpression]) -> ptr[BuildStatement];
 @extern fun build_stmt_for(b: ptr[Builder], init: ptr[BuildExpression], cond: ptr[BuildExpression], post: ptr[BuildExpression], body: ptr[BuildStatement]) -> ptr[BuildStatement];
-@extern fun build_stmt_goto(b: ptr[Builder], label: ptr[@const char]) -> ptr[BuildStatement];
+@extern fun build_stmt_goto(b: ptr[Builder], label: ptr[char @const]) -> ptr[BuildStatement];
 @extern fun build_stmt_continue(b: ptr[Builder]) -> ptr[BuildStatement];
 @extern fun build_stmt_break(b: ptr[Builder]) -> ptr[BuildStatement];
 @extern fun build_stmt_return(b: ptr[Builder], expr: ptr[BuildExpression]) -> ptr[BuildStatement];
@@ -109,12 +109,12 @@ struct BuildExpression;
 
 @extern fun build_expr_none(b: ptr[Builder]) -> ptr[BuildExpression];
 @extern fun build_expr_parenthesize(b: ptr[Builder], expr: ptr[BuildExpression]) -> ptr[BuildExpression];
-@extern fun build_expr_id(b: ptr[Builder], id: ptr[@const char]) -> ptr[BuildExpression];
+@extern fun build_expr_id(b: ptr[Builder], id: ptr[char @const]) -> ptr[BuildExpression];
 @extern fun build_expr_char(b: ptr[Builder], c: char) -> ptr[BuildExpression];
-@extern fun build_expr_multi_char(b: ptr[Builder], c: ptr[@const char]) -> ptr[BuildExpression];
-@extern fun build_expr_multi_char_slice(b: ptr[Builder], c: ptr[@const char], l: size_t) -> ptr[BuildExpression];
-@extern fun build_expr_string(b: ptr[Builder], s: ptr[@const char]) -> ptr[BuildExpression];
-@extern fun build_expr_string_slice(b: ptr[Builder], s: ptr[@const char], l: size_t) -> ptr[BuildExpression];
+@extern fun build_expr_multi_char(b: ptr[Builder], c: ptr[char @const]) -> ptr[BuildExpression];
+@extern fun build_expr_multi_char_slice(b: ptr[Builder], c: ptr[char @const], l: size_t) -> ptr[BuildExpression];
+@extern fun build_expr_string(b: ptr[Builder], s: ptr[char @const]) -> ptr[BuildExpression];
+@extern fun build_expr_string_slice(b: ptr[Builder], s: ptr[char @const], l: size_t) -> ptr[BuildExpression];
 @extern fun build_expr_int(b: ptr[Builder], i: uintmax_t) -> ptr[BuildExpression];
 @extern fun build_expr_int_oct(b: ptr[Builder], i: uintmax_t, min_len: c_uint) -> ptr[BuildExpression];
 @extern fun build_expr_int_hex(b: ptr[Builder], i: uintmax_t, min_len: c_uint) -> ptr[BuildExpression];
@@ -122,8 +122,8 @@ struct BuildExpression;
 
 @extern fun build_expr_index(b: ptr[Builder], arr: ptr[BuildExpression], idx: ptr[BuildExpression]) -> ptr[BuildExpression];
 @extern fun build_expr_call(b: ptr[Builder], fun_: ptr[BuildExpression], nargs: size_t, args: ptr[ptr[BuildExpression]]) -> ptr[BuildExpression];
-@extern fun build_expr_direct_member(b: ptr[Builder], obj: ptr[BuildExpression], field: ptr[@const char]) -> ptr[BuildExpression];
-@extern fun build_expr_indirect_member(b: ptr[Builder], ptr_: ptr[BuildExpression], field: ptr[@const char]) -> ptr[BuildExpression];
+@extern fun build_expr_direct_member(b: ptr[Builder], obj: ptr[BuildExpression], field: ptr[char @const]) -> ptr[BuildExpression];
+@extern fun build_expr_indirect_member(b: ptr[Builder], ptr_: ptr[BuildExpression], field: ptr[char @const]) -> ptr[BuildExpression];
 @extern fun build_expr_post_inc(b: ptr[Builder], lhs: ptr[BuildExpression]) -> ptr[BuildExpression];
 @extern fun build_expr_post_dec(b: ptr[Builder], lhs: ptr[BuildExpression]) -> ptr[BuildExpression];
 @extern fun build_expr_pre_inc(b: ptr[Builder], rhs: ptr[BuildExpression]) -> ptr[BuildExpression];
@@ -172,7 +172,7 @@ struct BuildExpression;
 
 @extern fun build_expr_comma(b: ptr[Builder], lhs: ptr[BuildExpression], rhs: ptr[BuildExpression]) -> ptr[BuildExpression];
 
-@extern fun printf(fmt: ptr[@const char], ...) -> c_sint;
+@extern fun printf(fmt: ptr[char @const], ...) -> c_sint;
 
 fun main() -> c_sint
 {

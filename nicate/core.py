@@ -433,7 +433,7 @@ def lower_grammar(gram):
                 return
             if isinstance(rhs, grammar.Slave):
                 # Slave must be preceded by Option (already split).
-                if deriv and deriv[-1] == i:
+                if deriv and deriv[-1] == i+len(deriv) - 1:
                     add_rule(lhs, rhses[:i] + rhses[i+1:], name, deriv + [i+len(deriv)])
                 else:
                     add_rule(lhs, rhses[:i] + [rhs.child] + rhses[i+1:], name, deriv)

@@ -21,7 +21,7 @@ install:
   - python3 get-pip.py --user
   - pip3 install --user cffi pytest
 script:
-  - make test default CC="$REAL_CC" CXX="$REAL_CXX"
+  - make all test CC="$REAL_CC" CXX="$REAL_CXX"
 
 matrix:
   fast-finish: true

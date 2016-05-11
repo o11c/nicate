@@ -566,8 +566,10 @@ class AstCreator(AbstractVisitor):
 
     def visit_block_TreeTagAnnotatedStmt(self, node, *, scope, ret):
         attr, stmt = node.children
-        _, attr = attr.children
+        _, attr, _, args, _ = attr.children
         attr = b2u(attr.data)
+        args = self.flatten3(args)
+        args = [self.visit(a, scope=scope, ret=ret) for a in args]
         stmt = self.visit(stmt, scope=scope, ret=ret)
         if not hasattr(stmt, 'attr_' + attr):
             raise ValueError('Invalid @%s for %s' % (attr, stmt))
@@ -643,10 +645,13 @@ class AstCreator(AbstractVisitor):
         return Arg(b2u(name.data), type, None)
 
     def visit_expr_TreeTagAttrExpr(self, node, *, scope, ret):
-        attr, expr = node.children
-        _, attr = attr.children
+        expr, attr = node.children
+        _, attr, _, args, _ = attr.children
         attr = b2u(attr.data)
         expr = self.visit(expr, scope=scope, ret=ret)
+        args = self.flatten3(args)
+        args = [self.visit(a, scope=scope, ret=ret) for a in args]
+        assert attr == 'const' and not args
         return QualifiedType.get_const(expr)
 
     def visit_fun_TreeCompoundStmt(self, node, *, scope, ret):
