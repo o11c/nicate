@@ -542,10 +542,15 @@ class AstCreator(AbstractVisitor):
         # TODO create implicit forward declarations of structs/functions here.
         for child in children:
             item = self.visit(child, mode='block', scope=scope, ret=ret)
+            if item is None:
+                continue
             if isinstance(item, (Decl, FunDef, StructType, UnionType, EnumType)):
                 scope.put(item.name, item)
             items.append(item)
         return Block(scope, items)
+
+    def visit_top_Nothing(self, node):
+        return self.visit_top_TreeTu(node)
 
     def visit_block_AtomComment(self, node, *, scope, ret):
         return Comment(b2u(node.data[1:].strip()))
@@ -805,6 +810,9 @@ class AstCreator(AbstractVisitor):
         assert ret.accepts(expr)
         return ReturnStmt(expr, ret)
 
+    def visit_block_SymSemicolon(self, node, *, scope, ret):
+        return None
+
 class AstLowerer(AbstractVisitor):
     __slots__ = ('_b',)
 
@@ -981,6 +989,7 @@ class AstLowerer(AbstractVisitor):
         return init(b.expr_string(node.val))
 
     # identical to visit_top_Decl
+    # (but separate because they're fundamentally distinct)
     def visit_fun_Decl(self, node):
         b = self._b
         name = node.name

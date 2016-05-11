@@ -234,6 +234,12 @@ class Tokenizer:
     def __del__(self):
         nicate_library.tokenizer_destroy(self._c_tokenizer)
 
+    def clone(self):
+        rv = object.__new__(Tokenizer)
+        rv._c_tokenizer = nicate_library.tokenizer_clone(self._c_tokenizer)
+        rv._py_lexicon = self._py_lexicon
+        return rv
+
     def reset(self):
         nicate_library.tokenizer_reset(self._c_tokenizer)
 
@@ -316,6 +322,12 @@ class Automaton:
     def __del__(self):
         nicate_library.automaton_destroy(self._c_automaton)
 
+    def clone(self):
+        rv = object.__new__(Automaton)
+        rv._py_grammar = self._py_grammar
+        rv._c_automaton = nicate_library.automaton_clone(self._c_automaton)
+        return rv
+
     def reset(self):
         nicate_library.automaton_reset(self._c_automaton)
 
@@ -326,11 +338,14 @@ class Automaton:
         rv = nicate_library.automaton_feed_term(a, sym, data, len(data))
         return bool(rv)
 
-    def get(self, classes):
+    def _get_count(self):
+        return nicate_library.automaton_tree_count(self._c_automaton)
+
+    def get(self, classes, *, _index=0):
         trees = nicate_library.automaton_result(self._c_automaton)
-        tree_count = nicate_library.automaton_tree_count(self._c_automaton)
-        assert (tree_count == 2)
-        return self._get(trees + 0, classes)
+        tree_count = self._get_count()
+        assert 0 <= _index < tree_count
+        return self._get(trees + _index, classes)
 
     def _get(self, tree, classes):
         while tree.num_children == 1:
@@ -520,6 +535,14 @@ class Parser:
             rv[rule.tag.dash] = Foo
         return rv
 
+    def clone(self):
+        rv = object.__new__(Parser)
+        rv._py_tokenizer = self._py_tokenizer.clone()
+        rv._py_automaton = self._py_automaton.clone()
+        for slot in Parser.__slots__[2:]:
+            setattr(rv, slot, getattr(self, slot))
+        return rv
+
     def reset(self):
         self._py_tokenizer.reset()
         self._py_automaton.reset()
@@ -539,24 +562,32 @@ class Parser:
             if sym_type == 'error':
                 if at_eof:
                     sym_type = '$end'
+                    assert sym_data == ''
                 else:
                     raise LexerError(self._loc.error('Unexpected character: %s' % sym_data))
             if sym_type != 'whitespace':
                 if not automaton.feed(sym_type, sym_data):
+                    if sym_type == '$end':
+                        if automaton._get_count() == 0:
+                            break
                     raise ParserError(self._loc.error('Unexpected %s: %s' % (sym_type, sym_data)))
             self._loc.track(sym_type, sym_data)
             if sym_data == '':
                 break
 
-    def get(self):
-        return self._py_automaton.get(self._classes)
+    def get(self, *, _index=0):
+        return self._py_automaton.get(self._classes, _index=_index)
 
     def parse_file(self, fo):
-        self.reset()
+        self = self.clone()
         self._loc.file = getattr(fo, 'name', '<unknown-file>')
         while True:
             chunk = fo.read(512)
             self.feed(chunk, not chunk)
             if not chunk:
                 break
+        count = self._py_automaton._get_count()
+        if count == 0:
+            return self.Nothing()
+        assert count == 2
         return self.get()

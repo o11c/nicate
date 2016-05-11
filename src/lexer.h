@@ -36,6 +36,8 @@ const char *lexicon_name(Lexicon *lex, size_t idx);
 
 Tokenizer *tokenizer_create(Lexicon *lex);
 void tokenizer_destroy(Tokenizer *tok);
+Tokenizer *tokenizer_clone(Tokenizer *tok);
+
 void tokenizer_feed(Tokenizer *tok, const char *str);
 void tokenizer_feed_slice(Tokenizer *tok, const char *str, size_t len);
 void tokenizer_feed_char(Tokenizer *tok, char c);

@@ -70,6 +70,7 @@ struct Automaton
 
     /* fixed references */
     size_t alloc_states;
+    size_t *state_refcount;
     State *states;
     Grammar *grammar;
 };
@@ -247,6 +248,7 @@ Automaton *automaton_create(Grammar *g, size_t num_states, State **states)
     rv.state_stack = (size_t *)malloc(rv.stacks_cap * sizeof(*rv.state_stack));
     rv.tree_stack = (Tree *)malloc(rv.stacks_cap * sizeof(*rv.tree_stack));
     rv.alloc_states = num_states;
+    rv.state_refcount = (size_t *)calloc(1, sizeof(size_t));
     rv.states = (State *)malloc(num_states * sizeof(*rv.states));
     for (i = 0; i < num_states; ++i)
     {
@@ -254,6 +256,23 @@ Automaton *automaton_create(Grammar *g, size_t num_states, State **states)
         free(states[i]);
     }
     rv.grammar = g;
+    return (Automaton *)memdup(&rv, sizeof(rv));
+}
+
+Automaton *automaton_clone(Automaton *a)
+{
+    Automaton rv;
+    rv.state_stack_top = 0;
+    rv.stacks_size = 0;
+    rv.stacks_cap = 16;
+    rv.state_stack = (size_t *)malloc(rv.stacks_cap * sizeof(*rv.state_stack));
+    rv.tree_stack = (Tree *)malloc(rv.stacks_cap * sizeof(*rv.tree_stack));
+    rv.alloc_states = a->alloc_states;
+    rv.state_refcount = a->state_refcount;
+    ++*rv.state_refcount;
+    rv.states = a->states;
+    /* Grammar is only borrowed. */
+    rv.grammar = a->grammar;
     return (Automaton *)memdup(&rv, sizeof(rv));
 }
 
@@ -288,12 +307,16 @@ void automaton_destroy(Automaton *a)
 {
     size_t i;
     (void)a->grammar;
-    for (i = a->alloc_states; i--; )
+    if (!(*a->state_refcount)--)
     {
-        free(a->states[i].gotos);
-        free(a->states[i].acts);
+        free(a->state_refcount);
+        for (i = a->alloc_states; i--; )
+        {
+            free(a->states[i].gotos);
+            free(a->states[i].acts);
+        }
+        free(a->states);
     }
-    free(a->states);
     free_trees(a->tree_stack, a->stacks_size);
     free(a->state_stack);
     free(a);

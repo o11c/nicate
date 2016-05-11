@@ -106,6 +106,17 @@ Tokenizer *tokenizer_create(Lexicon *lex)
     return rv;
 }
 
+Tokenizer *tokenizer_clone(Tokenizer *tok)
+{
+    Tokenizer *rv = (Tokenizer *)calloc(1, sizeof(*rv));
+    rv->runtime = mre_runtime_clone(tok->runtime);
+    rv->buffer_cap = 4096;
+    rv->buffer = (char *)calloc(rv->buffer_cap, 1);
+    rv->buffer_start = 0;
+    rv->buffer_end = 0;
+    return rv;
+}
+
 void tokenizer_destroy(Tokenizer *tok)
 {
     free(tok->buffer);

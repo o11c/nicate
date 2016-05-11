@@ -96,9 +96,10 @@ attr-stmt:
     fun id fun-sig maybe-compound-stmt                      #fun-stmt
     let typed-id ';'                                        #declaration
     let maybe-typed-id '=' expr ';'                         #initialized-declaration
+    ';'
 noattr-stmt:
     comment
-    assign? ';'                                             #expr-stmt
+    assign ';'                                              #expr-stmt
     id ':' stmt                                             #labeled-stmt
     default ':' stmt                                        #default-stmt
     case expr ':' stmt                                      #case-stmt

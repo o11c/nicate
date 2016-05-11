@@ -51,6 +51,7 @@ Automaton *automaton_create(Grammar *g, size_t num_states, State **states);
 Automaton *automaton_create_auto(Grammar *g);
 void automaton_destroy(Automaton *a);
 void automaton_reset(Automaton *a);
+Automaton *automaton_clone(Automaton *a);
 
 bool automaton_feed_term(Automaton *a, size_t sym, const char *str, size_t len);
 Tree *automaton_result(Automaton *a);
