@@ -7,3 +7,4 @@ gen/*.gen.*
 nicate/__pycache__/
 nicate/tests/__pycache__/
 nicate/.cache/
+/cache/
